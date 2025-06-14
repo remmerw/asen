@@ -1,0 +1,42 @@
+[versions]
+agp = "8.10.1"
+atomicfu = "0.27.0"
+kotlin = "2.1.21"
+kotlinTest = "2.1.21"
+kotlinxCoroutinesCore = "1.10.2"
+kotlinxIoCore = "0.7.0"
+kotlinStdlib = "2.1.21"
+cryptoRand = "0.5.1"
+ktor = "3.2.0"
+uriKmp = "0.0.19"
+sha2 = "0.7.0"
+indispensable = "3.16.2"
+kotlinxSerializationProtobuf = "1.8.1"
+kotlinx-datetime = "0.6.2"
+cryptographyCore = "0.4.0"
+hmacSha2 = "0.7.0"
+
+[libraries]
+atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlinTest" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIoCore" }
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinStdlib" }
+ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor" }
+uri-kmp = { module = "com.eygraber:uri-kmp", version.ref = "uriKmp" }
+sha2 = { module = "org.kotlincrypto.hash:sha2", version.ref = "sha2" }
+indispensable = { module = "at.asitplus.signum:indispensable", version.ref = "indispensable" }
+kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinxSerializationProtobuf" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+crypto-rand = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "cryptoRand" }
+cryptography-bigint = { module = "dev.whyoleg.cryptography:cryptography-bigint", version.ref = "cryptographyCore" }
+cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptographyCore" }
+cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version.ref = "cryptographyCore" }
+hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version.ref = "hmacSha2" }
+
+
+[plugins]
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.32.0" }
