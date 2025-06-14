@@ -1,5 +1,14 @@
 The **Asen** library is currently in development [**Version 0.2.5**]
 
+<div>
+    <div>
+        <img src="https://img.shields.io/maven-central/v/io.github.remmerw/asen" alt="Kotlin Maven Version" />
+        <img src="https://img.shields.io/badge/Platform-Android-brightgreen.svg?logo=android" alt="Badge Android" />
+        <img src="https://img.shields.io/badge/Platform-iOS%20%2F%20macOS-lightgrey.svg?logo=apple" alt="Badge iOS" />
+        <img src="https://img.shields.io/badge/Platform-JVM-8A2BE2.svg?logo=openjdk" alt="Badge JVM" />
+    </div>
+</div>
+
 ## Asen
 
 The **Asen** library implements a subset of [libp2p](https://github.com/libp2p/specs/tree/master).
@@ -94,6 +103,23 @@ Not supported and it is not be considered to be part of the library. [**Limitati
 #### UPNP
 
 Not supported and it is not be considered to be part of the library. [**Limitation by Design**]
+
+
+## Integration
+
+```
+    
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            ...
+            implementation("io.github.remmerw:asen:0.2.5")
+        }
+        ...
+    }
+}
+    
+```
 
 ## API
 
