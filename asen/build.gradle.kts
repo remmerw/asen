@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "io.github.remmerw"
-version = "0.2.5"
+version = "0.2.6"
 
 kotlin {
 
@@ -24,21 +24,20 @@ kotlin {
         }
     }
 
-    // todo iosX64()
-    // todo iosArm64()
-    // todo iosSimulatorArm64()
-    // todo linuxX64()
-
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+    linuxX64()
 
     sourceSets {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.kotlinx.datetime)
-                implementation(libs.uri.kmp) // TODO FUTURE [medium] remove when part of stdlib
+                implementation(libs.uri.kmp)
                 implementation(libs.kotlinx.serialization.protobuf)
                 implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.io.core) // TODO FUTURE [medium] remove when part of stdlib
+                implementation(libs.kotlinx.io.core)
                 implementation(libs.sha2)
                 implementation(libs.hmac.sha2)
                 implementation(libs.crypto.rand)
@@ -47,6 +46,7 @@ kotlin {
                 implementation(libs.cryptography.core)
                 implementation(libs.indispensable)
                 implementation(libs.cryptography.bigint)
+                implementation(libs.curve25519)
             }
         }
 

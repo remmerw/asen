@@ -1,5 +1,8 @@
 package io.github.remmerw.asen
 
+import io.github.andreypfau.curve25519.ed25519.Ed25519
+import io.github.andreypfau.curve25519.ed25519.Ed25519PrivateKey
+import io.github.andreypfau.curve25519.ed25519.Ed25519PublicKey
 import io.github.remmerw.asen.core.Base58
 import io.github.remmerw.asen.core.RELAY_PROTOCOL_STOP
 import io.github.remmerw.asen.core.RelayStopHandler
@@ -13,8 +16,6 @@ import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.core.reserveHop
-import io.github.remmerw.asen.crypto.Ed25519Sign
-import io.github.remmerw.asen.crypto.Ed25519Verify
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Connector
@@ -36,6 +37,7 @@ import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
+import kotlin.random.Random
 
 
 internal const val DHT_ALPHA: Int = 30
@@ -410,6 +412,16 @@ data class PeerId(val hash: ByteArray) {
 
         return hash.contentEquals(other.hash)
     }
+
+
+    fun verify(data: ByteArray, signature: ByteArray) { // move to Asen
+        require(
+            Ed25519PublicKey(hash)
+                .verify(data, signature)
+        ) {
+            "Data is not valid with signature"
+        }
+    }
 }
 
 // Note a peerId is always a public key (ed25519)
@@ -418,21 +430,22 @@ data class Keys(val peerId: PeerId, val privateKey: ByteArray)
 
 
 fun generateKeys(): Keys {
-    val keyPair = Ed25519Sign.KeyPair.newKeyPair()
+
+    val privateKey: Ed25519PrivateKey = Ed25519.generateKey(Random)
+    val publicKey: Ed25519PublicKey = privateKey.publicKey()
+
     return Keys(
-        PeerId(keyPair.getPublicKey()),
-        keyPair.getPrivateKey()
+        PeerId(publicKey.toByteArray()),
+        privateKey.seed()
     )
 }
 
 fun verify(peerId: PeerId, data: ByteArray, signature: ByteArray) { // move to Asen
-    val verifier = Ed25519Verify(peerId.hash)
-    verifier.verify(signature, data)
+    peerId.verify(data, signature)
 }
 
 fun sign(keys: Keys, data: ByteArray): ByteArray { // move to Asen
-    val signer = Ed25519Sign(keys.privateKey)
-    return signer.sign(data)
+    return Ed25519.keyFromSeed(keys.privateKey).sign(data)
 }
 
 
