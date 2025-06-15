@@ -637,5 +637,5 @@ internal fun debug(throwable: Throwable) {
     }
 }
 
-private const val DEBUG: Boolean = true
-private const val ERROR: Boolean = true
+private const val DEBUG: Boolean = false
+private const val ERROR: Boolean = false

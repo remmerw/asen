@@ -11,7 +11,7 @@ internal class TlsClientEngine(
     private val requestedExtensions: List<Extension>,
     private val sender: ClientMessageSender,
     private val statusHandler: TlsStatusEventHandler
-) : TlsEngine(certificate.publicKey, certificate.privateKey), ClientMessageProcessor {
+) : TlsEngine(certificate.publicKey), ClientMessageProcessor {
     private var selectedCipher: CipherSuite? = null
     private lateinit var sentExtensions: List<Extension>
     private var status = Status.Initial

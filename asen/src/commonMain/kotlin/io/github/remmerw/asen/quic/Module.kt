@@ -5,7 +5,6 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.EC
 import dev.whyoleg.cryptography.algorithms.ECDSA
 import dev.whyoleg.cryptography.algorithms.SHA256
-import io.github.remmerw.asen.debug
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 
@@ -206,41 +205,21 @@ internal fun verifySignature(
     // https://tools.ietf.org/html/rfc8446#section-9.1
     // "A TLS-compliant application MUST support digital signatures with rsa_pkcs1_sha256 (for certificates),
     // rsa_pss_rsae_sha256 (for CertificateVerify and certificates), and ecdsa_secp256r1_sha256."
-    return when (signatureScheme) {
-        SignatureScheme.RSA_PSS_RSAE_SHA256 -> {
-            debug("RSA_PSS_RSAE_SHA256")
-            throw HandshakeFailureAlert("Signature algorithm not supported $signatureScheme")
-        }
-
-        SignatureScheme.RSA_PSS_RSAE_SHA384 -> {
-            debug("RSA_PSS_RSAE_SHA384")
-            throw HandshakeFailureAlert("Signature algorithm not supported $signatureScheme")
-        }
-
-        SignatureScheme.RSA_PSS_PSS_SHA512 -> {
-            debug("RSA_PSS_PSS_SHA512")
-            throw HandshakeFailureAlert("Signature algorithm not supported $signatureScheme")
-        }
-
-        SignatureScheme.ECDSA_SECP256R1_SHA256 -> {
-            val ecdsa = CryptographyProvider.Default.get(ECDSA)
-
-            val serverPublicKey = ecdsa.publicKeyDecoder(EC.Curve.P256)
-                .decodeFromByteArrayBlocking(
-                    EC.PublicKey.Format.DER,
-                    certificate.publicKey.encodeToDer()
-                )
-
-            val verifier2 = serverPublicKey.signatureVerifier(SHA256, ECDSA.SignatureFormat.DER)
-            return verifier2.tryVerifySignatureBlocking(
-                certificate.tbsCertificate.encodeToDer(),
-                certificate.signature.encodeToDer()
-            )
-        }
-
-        else -> {
-            // Bad luck, not (yet) supported.
-            throw HandshakeFailureAlert("Signature algorithm not supported $signatureScheme")
-        }
+    require(signatureScheme == SignatureScheme.ECDSA_SECP256R1_SHA256) {
+        "Not yet supported signature scheme " + signatureScheme.name
     }
+
+    val ecdsa = CryptographyProvider.Default.get(ECDSA)
+
+    val serverPublicKey = ecdsa.publicKeyDecoder(EC.Curve.P256)
+        .decodeFromByteArrayBlocking(
+            EC.PublicKey.Format.DER,
+            certificate.publicKey.encodeToDer()
+        )
+
+    val verifier2 = serverPublicKey.signatureVerifier(SHA256, ECDSA.SignatureFormat.DER)
+    return verifier2.tryVerifySignatureBlocking(
+        certificate.tbsCertificate.encodeToDer(),
+        certificate.signature.encodeToDer()
+    )
 }

@@ -14,21 +14,6 @@ The **Asen** library implements a subset of [libp2p](https://github.com/libp2p/s
 It is recommended to be familiar with the technology of **libp2p** in order to
 understand this documentation.
 
-### Goals
-
-This sections describes the main goals of this project
-
-- The library should be usable in the mobile context (Android). That requires that it is optimize
-  towards memory usage and performance. [**Version 1.0.0**]
-- The size of the library should be as small as possible. Reason is that it should be compiled as
-  wasm library, and the more data are transferred in the Web context the less attractive the library
-  will be (same goes for Android apps). The reduced size will be achieved by a well defined set of
-  features and a pure kotlin implementation. [**Version 1.0.0**]
-- The library should be compatible to **libp2p**, but with a defined subset of features [**Version
-  1.0.0**]
-- The library should be published to Maven Central [**Version 1.0.0**]
-- The library should be in the final stage a Kotlin Multiplatform project [**Version 0.5.0**]
-
 ### Use-Cases
 
 The only use-case which is supported, is the search of another peer via its peer ID.
@@ -63,13 +48,6 @@ The library support the following protocols of the ALPN **libp2p**
 The certificate, which is required for a TLS handshake during a connection process, is described
 in [TLS Handshake](https://github.com/libp2p/specs/blob/master/tls/tls.md).
 The self-signed certificate is used to verify each others peer Ids.
-
-### Dependencies
-
-The **Asen** library depends on the following libraries
-
-- [Kwik](https://github.com/ptrd/kwik)
-  [integrated, QUIC and TLS]
 
 ### Limitations
 
@@ -111,7 +89,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             ...
-            implementation("io.github.remmerw:asen:0.2.5")
+            implementation("io.github.remmerw:asen:0.2.6")
         }
         ...
     }
@@ -142,7 +120,7 @@ val asen = newAsen(keys = keys, bootstrap= bootstrap, blockStore = blockstore, p
 
 
 // -> or the shortform, which does the same settings
-val asen = newAsen(bootstrap= bootstrap); 
+val asen = newAsen(bootstrap= bootstrap)
 
 
 

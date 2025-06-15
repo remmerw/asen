@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import dev.whyoleg.cryptography.algorithms.ECDSA
 import org.kotlincrypto.macs.hmac.sha2.HmacSHA256
 
-abstract class TlsEngine(val publicKey: ECDSA.PublicKey, val privateKey: ECDSA.PrivateKey) :
+abstract class TlsEngine(val publicKey: ECDSA.PublicKey) :
     MessageProcessor, TrafficSecrets {
     internal var state: TlsState? = null
     var remoteCertificate: X509Certificate? = null
