@@ -1,9 +1,9 @@
 package io.github.remmerw.asen
 
 import io.github.andreypfau.curve25519.ed25519.Ed25519
+import io.github.remmerw.asen.core.AddressUtil
 import io.github.remmerw.asen.core.BYTES_EMPTY
 import io.github.remmerw.asen.core.HopMessage
-import io.github.remmerw.asen.core.AddressUtil
 import io.github.remmerw.asen.core.Status
 import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.keyDistance
