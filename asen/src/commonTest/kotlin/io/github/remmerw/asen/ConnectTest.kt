@@ -1,6 +1,7 @@
 package io.github.remmerw.asen
 
 import io.github.remmerw.asen.TestEnv.BOOTSTRAP
+import io.github.remmerw.asen.core.AddressUtil
 import io.github.remmerw.asen.core.connect
 import io.github.remmerw.asen.core.identify
 import io.github.remmerw.asen.quic.Connection
@@ -48,12 +49,16 @@ class ConnectTest {
             bootstrap = BOOTSTRAP,
             reserve = { event: Any -> println("Reservation Event") }
         )
-
+        val address = byteArrayOf(127, 0, 0, 1)
+        val cmp = AddressUtil.textToNumericFormatV4("127.0.0.1")
+        assertNotNull(cmp)
+        assertTrue(address.contentEquals(cmp))
+        assertTrue(AddressUtil.isIPv4LiteralAddress("127.0.0.1"))
+        assertFalse(AddressUtil.isIPv6LiteralAddress("127.0.0.1"))
 
         val publicAddresses = listOf(
             Peeraddr(
-                server.peerId(),
-                byteArrayOf(127, 0, 0, 1), 5001.toUShort()
+                server.peerId(), address, 5001.toUShort()
             )
         )
         server.makeReservations(publicAddresses, 25, 120)

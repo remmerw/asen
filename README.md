@@ -1,5 +1,3 @@
-The **Asen** library is currently in development [**Version 0.2.5**]
-
 <div>
     <div>
         <img src="https://img.shields.io/maven-central/v/io.github.remmerw/asen" alt="Kotlin Maven Version" />
