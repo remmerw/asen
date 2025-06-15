@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "io.github.remmerw"
-version = "0.2.6"
+version = "0.2.7"
 
 kotlin {
 
@@ -67,9 +67,12 @@ kotlin {
                 implementation(libs.cryptography.provider.jdk)
             }
         }
-        
+
         iosMain {
             dependencies {
+                implementation(libs.cryptography.provider.apple)
+                // or openssl3 provider with better algorithms coverage and other native targets support
+                // implementation("dev.whyoleg.cryptography:cryptography-provider-openssl3-prebuilt:0.4.0")
             }
         }
     }

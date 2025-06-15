@@ -33,6 +33,7 @@ crypto-rand = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "c
 cryptography-bigint = { module = "dev.whyoleg.cryptography:cryptography-bigint", version.ref = "cryptographyCore" }
 cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptographyCore" }
 cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version.ref = "cryptographyCore" }
+cryptography-provider-apple = { module = "dev.whyoleg.cryptography:cryptography-provider-apple", version.ref = "cryptographyCore" }
 hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version.ref = "hmacSha2" }
 curve25519 = { module = "io.github.andreypfau:curve25519-kotlin", version.ref = "curve25519" }
 
