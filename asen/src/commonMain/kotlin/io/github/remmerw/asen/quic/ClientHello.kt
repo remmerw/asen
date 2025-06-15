@@ -3,7 +3,6 @@ package io.github.remmerw.asen.quic
 import dev.whyoleg.cryptography.algorithms.ECDSA
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
 
 @Suppress("ArrayInDataClass")
@@ -112,7 +111,7 @@ internal data class ClientHello(
             buffer.writeByte(0x03.toByte())
 
             // client random 32 bytes
-            val clientRandom = CryptoRand.Default.nextBytes(ByteArray(32))
+            val clientRandom = Random.nextBytes(ByteArray(32))
             buffer.write(clientRandom)
 
             val sessionId: ByteArray

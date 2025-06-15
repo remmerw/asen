@@ -33,14 +33,11 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
-                implementation(libs.kotlinx.datetime)
                 implementation(libs.uri.kmp)
                 implementation(libs.kotlinx.serialization.protobuf)
-                implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.io.core)
                 implementation(libs.sha2)
                 implementation(libs.hmac.sha2)
-                implementation(libs.crypto.rand)
                 implementation(libs.ktor.network)
                 implementation(libs.atomicfu)
                 implementation(libs.cryptography.core)
