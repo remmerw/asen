@@ -116,7 +116,7 @@ class UtilsTest {
 
     @OptIn(ExperimentalEncodingApi::class)
     @Test
-    fun tinkEd25519() {
+    fun ed25519() {
         val keys = generateKeys()
 
         val peerId = keys.peerId
