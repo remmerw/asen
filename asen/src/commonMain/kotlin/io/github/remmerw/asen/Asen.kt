@@ -652,4 +652,4 @@ internal fun debug(throwable: Throwable) {
 }
 
 private const val DEBUG: Boolean = false
-private const val ERROR: Boolean = false
+private const val ERROR: Boolean = true

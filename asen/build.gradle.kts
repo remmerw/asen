@@ -29,12 +29,12 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    linuxArm64()
-    linuxX64()
-    linuxArm64()
-    wasmJs()
-    // todo wasmWasi()
-    js()
+    // linuxArm64()
+    // linuxX64()
+    // linuxArm64()
+    // wasmJs()
+    // wasmWasi()
+    // js()
 
     sourceSets {
         commonMain {
