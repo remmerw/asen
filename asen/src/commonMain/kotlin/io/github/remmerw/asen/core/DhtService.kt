@@ -119,7 +119,7 @@ private fun runRequest(
                             val res = evalClosestPeers(pms, dhtPeers, key)
                             if (res.isNotEmpty()) {
                                 if (nextPeer.replaceable) {
-                                    asen.peerStore().storePeeraddr(nextPeer.peeraddr)
+                                    asen.peerStore().store(nextPeer.peeraddr)
                                 }
                             }
                         } catch (_: Throwable) {

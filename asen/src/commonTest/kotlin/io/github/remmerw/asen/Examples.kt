@@ -1,6 +1,5 @@
 package io.github.remmerw.asen
 
-import io.github.remmerw.asen.TestEnv.BOOTSTRAP
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
@@ -15,10 +14,8 @@ class Examples {
     fun testConnection(): Unit = runBlocking(Dispatchers.IO) {
 
         val bob = newAsen(
-            bootstrap = BOOTSTRAP,
             reserve = { event: Any -> println("Reservation Bob") })
         val alice = newAsen(
-            bootstrap = BOOTSTRAP,
             reserve = { event: Any -> println("Reservation Alice") })
 
         // Use Case : alice wants to connect to bob

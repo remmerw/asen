@@ -49,7 +49,7 @@ val LIBP2P_CERTIFICATE_EXTENSION: String = prefixToString()
 interface PeerStore {
     suspend fun peeraddrs(limit: Int): List<Peeraddr>
 
-    suspend fun storePeeraddr(peeraddr: Peeraddr)
+    suspend fun store(peeraddr: Peeraddr)
 }
 
 class Asen internal constructor(
@@ -141,6 +141,7 @@ class Asen internal constructor(
      * @param peeraddrs the peeraddrs which should be announced to incoming connecting peers via relays
      * @param maxReservation number of max reservations
      * @param timeout in seconds
+     * @param running true, when reservation is actually running otherwise false when done
      */
     suspend fun makeReservations(
         peeraddrs: List<Peeraddr>,
@@ -218,7 +219,7 @@ class Asen internal constructor(
  */
 fun newAsen(
     keys: Keys = generateKeys(),
-    bootstrap: List<Peeraddr> = emptyList(),
+    bootstrap: List<Peeraddr> = bootstrap(),
     peerStore: PeerStore = MemoryPeers(),
     reserve: (Any) -> Unit = {}
 ): Asen {
@@ -235,13 +236,26 @@ class MemoryPeers : PeerStore {
         }
     }
 
-    override suspend fun storePeeraddr(peeraddr: Peeraddr) {
+    override suspend fun store(peeraddr: Peeraddr) {
         mutex.withLock {
             peers.add(peeraddr)
         }
     }
 }
 
+fun bootstrap(): List<Peeraddr> {
+    // "/ip4/104.131.131.82/udp/4001/quic/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ"
+    val peeraddrs = mutableListOf<Peeraddr>()
+
+    peeraddrs.add(
+        createPeeraddr(
+            "QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
+            byteArrayOf(104.toByte(), 131.toByte() , 131.toByte() , 82.toByte() ) ,
+            4001.toUShort()
+        )
+    )
+    return peeraddrs
+}
 
 @OptIn(ExperimentalAtomicApi::class)
 private suspend fun makeReservations(

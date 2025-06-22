@@ -114,9 +114,7 @@ val keys : Keys = generateKeys(); // generate new keys
 val bootstrap = Peeraddrs();
 bootstrap.add(...); // add a valid bootstrap address
 
-val port = nextFreePort() // generate random port
-
-val asen = newAsen(keys = keys, bootstrap= bootstrap, blockStore = blockstore, port = port)
+val asen = newAsen(keys = keys, bootstrap = bootstrap, blockStore = blockstore)
 
 
 // -> or the shortform, which does the same settings
@@ -134,14 +132,12 @@ val asen = newAsen(bootstrap= bootstrap)
  * @param bootstrap initial bootstrap peers for the DHT (without bootstrap peers it can only be used for testing)
  * @param peerStore additional DHT peers (note the list will be filled and readout)
  * @param reserve callback notification when number of reservations have changed
- * @param port the port which is used for the "final" connection between two peers
  */
 fun newAsen(
     keys: Keys = generateKeys(),
-    bootstrap: Peeraddrs = Peeraddrs(),   
+    bootstrap: List<Peeraddr> = bootstrap(),
     peerStore: PeerStore = MemoryPeers(),
-    reserve: (Any) -> Unit = {},
-    port: Int = nextFreePort()
+    reserve: (Any) -> Unit = {}
 ): Asen {
 ...
 }
@@ -158,11 +154,9 @@ The default peer store implementation is represented by the class **MemoryPeers*
 
 ```
 interface PeerStore {
-    fun peeraddrs(limit: Int): List<Peeraddr>
+    suspend fun peeraddrs(limit: Int): List<Peeraddr>
 
-    fun storePeeraddr(peeraddr: Peeraddr)
-
-    fun removePeeraddr(peeraddr: Peeraddr)
+    suspend fun store(peeraddr: Peeraddr)
 }
 ```
 
@@ -181,7 +175,7 @@ which will also be used for signing content and authentication.
      * @param timeout in seconds
      * @return list of the peer addresses (usually one IPv6 address)
      */
-    fun findPeer(target: PeerId, timeout: Long): Peeraddrs {
+     suspend fun findPeer(target: PeerId, timeout: Long): List<Peeraddr> {
          ...
     }
 ```
@@ -203,9 +197,10 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
      * @param peeraddrs the peeraddrs which should be announced to incoming connecting peers via relays
      * @param maxReservation number of max reservations
      * @param timeout in seconds
+     * @param running true, when reservation is actually running otherwise false when done
      */
-    fun makeReservations(
-        peeraddrs: Peeraddrs,
+    suspend fun makeReservations(
+        peeraddrs: List<Peeraddr>,
         maxReservation: Int,
         timeout: Int,
         running: (Boolean) -> Unit = {}
@@ -235,17 +230,23 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 
 ```
     @Test
-    fun testConnection() {
+    fun testConnection(): Unit = runBlocking(Dispatchers.IO) {
 
-        val bob = newAsen(bootstrap = BOOTSTRAP)
-        val alice = newAsen(bootstrap = BOOTSTRAP)
+        val bob = newAsen(
+            reserve = { event: Any -> println("Reservation Bob") })
+        val alice = newAsen(
+            reserve = { event: Any -> println("Reservation Alice") })
 
         // Use Case : alice wants to connect to bob
-
         // [1] bob has to make reservations to relays
-        
+        val publicAddresses = listOf(
+            Peeraddr(
+                bob.peerId(),
+                byteArrayOf(127, 0, 0, 1), 5001.toUShort()
+            )
+        )
+
         // Note: bob has a service running on port 5001
-        val publicAddresses = TestEnv.publicPeeraddrs(bob.peerId(), 5001) 
         bob.makeReservations(
             publicAddresses,
             20,
@@ -264,13 +265,9 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 
         val address = peeraddrs.first()
         assertEquals(address.peerId, bob.peerId())
-        val inetAddress = InetAddress.getByAddress(address.address)
-        assertNotNull(inetAddress)
 
-        println("Found address $inetAddress")
-
-        bob.close()
-        alice.close()
+        bob.shutdown()
+        alice.shutdown()
     }
 
 ```

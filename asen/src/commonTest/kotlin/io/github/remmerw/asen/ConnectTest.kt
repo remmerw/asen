@@ -1,6 +1,5 @@
 package io.github.remmerw.asen
 
-import io.github.remmerw.asen.TestEnv.BOOTSTRAP
 import io.github.remmerw.asen.core.AddressUtil
 import io.github.remmerw.asen.core.connect
 import io.github.remmerw.asen.core.identify
@@ -46,7 +45,6 @@ class ConnectTest {
     fun testIdentify(): Unit = runBlocking(Dispatchers.IO) {
 
         val server = newAsen(
-            bootstrap = BOOTSTRAP,
             reserve = { event: Any -> println("Reservation Event") }
         )
         val address = byteArrayOf(127, 0, 0, 1)
