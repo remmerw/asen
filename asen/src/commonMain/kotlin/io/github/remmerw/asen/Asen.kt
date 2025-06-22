@@ -250,7 +250,7 @@ fun bootstrap(): List<Peeraddr> {
     peeraddrs.add(
         createPeeraddr(
             "QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
-            byteArrayOf(104.toByte(), 131.toByte() , 131.toByte() , 82.toByte() ) ,
+            byteArrayOf(104.toByte(), 131.toByte(), 131.toByte(), 82.toByte()),
             4001.toUShort()
         )
     )
