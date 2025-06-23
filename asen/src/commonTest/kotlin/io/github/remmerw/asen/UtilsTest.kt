@@ -146,6 +146,11 @@ class UtilsTest {
         assertTrue(edPrivateKey.publicKey().toByteArray().contentEquals(peerId.hash))
 
         verify(peerIdCmp, msg, signature)
+
+        val storedKeys = generateKeys(privateKey)
+        assertTrue(keys.privateKey.contentEquals(storedKeys.privateKey))
+        assertEquals(keys.peerId, storedKeys.peerId)
+
     }
 
 

@@ -454,6 +454,17 @@ fun generateKeys(): Keys {
     )
 }
 
+fun generateKeys(privateKey: ByteArray): Keys {
+
+    val edPrivateKey = Ed25519.keyFromSeed(privateKey)
+    val publicKey = edPrivateKey.publicKey()
+
+    return Keys(
+        PeerId(publicKey.toByteArray()),
+        privateKey
+    )
+}
+
 fun verify(peerId: PeerId, data: ByteArray, signature: ByteArray) { // move to Asen
     peerId.verify(data, signature)
 }
