@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.EC
 import dev.whyoleg.cryptography.algorithms.ECDSA
+import dev.whyoleg.cryptography.algorithms.SHA256
 import dev.whyoleg.cryptography.bigint.BigInt
 import dev.whyoleg.cryptography.bigint.decodeToBigInt
 import dev.whyoleg.cryptography.bigint.encodeToByteArray
@@ -40,7 +41,6 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import org.kotlincrypto.hash.sha2.SHA256
 import kotlin.experimental.xor
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -131,12 +131,10 @@ internal fun prefixToString(): String {
 }
 
 internal fun createHash(bytes: ByteArray): ByteArray {
-    try {
-        val digest = SHA256()
-        return digest.digest(bytes)
-    } catch (throwable: Throwable) {
-        throw IllegalStateException(throwable)
-    }
+    return CryptographyProvider.Default
+        .get(SHA256)
+        .hasher()
+        .hashBlocking(bytes)
 }
 
 internal fun createKey(target: ByteArray): Key {
@@ -423,7 +421,7 @@ internal fun createCertificate(keys: Keys): Certificate {
     )
 
     val generator = keyPair.privateKey.signatureGenerator(
-        dev.whyoleg.cryptography.algorithms.SHA256,
+        SHA256,
         ECDSA.SignatureFormat.DER
     )
 

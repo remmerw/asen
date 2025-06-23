@@ -4,9 +4,9 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.EC
 import dev.whyoleg.cryptography.algorithms.ECDH
 import dev.whyoleg.cryptography.algorithms.ECDSA
+import dev.whyoleg.cryptography.algorithms.SHA256
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import org.kotlincrypto.hash.sha2.SHA256
 import org.kotlincrypto.macs.hmac.sha2.HmacSHA256
 import kotlin.math.ceil
 import kotlin.math.min
@@ -38,8 +38,11 @@ internal class TlsState(
 
         // https://tools.ietf.org/html/rfc8446#section-7.1
         // "The Hash function used by Transcript-Hash and HKDF is the cipher suite hash algorithm."
-        val hashFunction = SHA256()
-        emptyHash = hashFunction.digest(ByteArray(0))
+
+        emptyHash = CryptographyProvider.Default
+            .get(SHA256)
+            .hasher()
+            .hashBlocking(ByteArray(0))
 
         // https://tools.ietf.org/html/rfc8446#section-7.1
         // "If a given secret is not available, then the 0-value consisting of a

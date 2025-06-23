@@ -1,7 +1,8 @@
 package io.github.remmerw.asen.quic
 
-
-import org.kotlincrypto.hash.sha2.SHA256
+import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.algorithms.SHA256
+import kotlinx.io.Buffer
 
 
 // https://tools.ietf.org/html/rfc8446#section-4.4.1
@@ -9,9 +10,8 @@ import org.kotlincrypto.hash.sha2.SHA256
 //  concatenation of each included handshake message, including the handshake message header carrying the handshake
 //  message payloadType and length fields, but not including record layer headers."
 internal class TranscriptHash {
-    // https://tools.ietf.org/html/rfc8446#section-7.1
-    // "The Hash function used by Transcript-Hash and HKDF is the cipher suite hash algorithm."
-    private var hashFunction = SHA256()
+
+
     private val msgData: MutableMap<Int, ByteArray> = mutableMapOf()
     private val hashes: MutableMap<Int, ByteArray> = mutableMapOf()
 
@@ -59,7 +59,7 @@ internal class TranscriptHash {
      * this method to record the message.
      */
     fun recordClient(msg: HandshakeMessage) {
-        msgData[convert(msg.type!!, true)] = msg.bytes
+        msgData[convert(msg.type, true)] = msg.bytes
     }
 
     /**
@@ -71,7 +71,7 @@ internal class TranscriptHash {
      * this method to record the message.
      */
     fun recordServer(msg: HandshakeMessage) {
-        msgData[convert(msg.type!!, false)] = msg.bytes
+        msgData[convert(msg.type, false)] = msg.bytes
     }
 
     private fun getHash(ordinal: Int): ByteArray {
@@ -82,16 +82,23 @@ internal class TranscriptHash {
     }
 
     private fun computeHash(requestedType: ExtendedHandshakeType) {
+        val buffer = Buffer()
         for (type in hashedMessages) {
             val data = msgData[type.ordinal]
             if (data != null) {
-                hashFunction.update(data)
+                buffer.write(data)
             }
             if (type == requestedType) {
                 break
             }
         }
-        hashes[requestedType.ordinal] = hashFunction.digest()
+        // https://tools.ietf.org/html/rfc8446#section-7.1
+        // "The Hash function used by Transcript-Hash and HKDF is the cipher suite hash algorithm."
+        hashes[requestedType.ordinal] = CryptographyProvider.Default
+            .get(SHA256)
+            .hasher()
+            .hashBlocking(buffer)
+            .toByteArray()
     }
 
     private val ambigousTypes: List<HandshakeType> = listOf(
