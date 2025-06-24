@@ -1,9 +1,7 @@
 [versions]
 agp = "8.10.1"
 atomicfu = "0.28.0"
-kotlin = "2.1.21"
-kotlinTest = "2.1.21"
-kotlinStdlib = "2.1.21"
+kotlin = "2.2.0"
 ktor = "3.2.0"
 indispensable = "3.16.2"
 kotlinxSerializationProtobuf = "1.8.1"
@@ -13,8 +11,8 @@ curve25519 = "0.0.8"
 
 [libraries]
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlinTest" }
-kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinStdlib" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
 ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor" }
 indispensable = { module = "at.asitplus.signum:indispensable", version.ref = "indispensable" }
 kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinxSerializationProtobuf" }
