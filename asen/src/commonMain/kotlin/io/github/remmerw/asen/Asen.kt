@@ -167,15 +167,15 @@ class Asen internal constructor(
      *
      * @return list of relay peer addresses
      */
-    fun reservations(): List<Peeraddr> {
+    suspend fun reservations(): List<Peeraddr> {
         return reservations(this)
     }
 
-    fun hasReservations(): Boolean {
+    suspend fun hasReservations(): Boolean {
         return !reservations().isEmpty()
     }
 
-    fun numReservations(): Int {
+    suspend fun numReservations(): Int {
         return reservations().size
     }
 
@@ -183,7 +183,7 @@ class Asen internal constructor(
         return keys.peerId
     }
 
-    fun shutdown() {
+    suspend fun shutdown() {
         connector.shutdown()
     }
 
@@ -344,7 +344,7 @@ private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean
     }
 }
 
-private fun reservations(asen: Asen): List<Peeraddr> {
+private suspend fun reservations(asen: Asen): List<Peeraddr> {
     val peeraddrs = mutableListOf<Peeraddr>()
     for (connection in asen.connector().connections()) {
         if (connection.isMarked()) {
@@ -512,11 +512,11 @@ fun createPeeraddr(peerId: String, address: ByteArray, port: UShort): Peeraddr {
 }
 
 
-
 fun decodePeerId(name: String): PeerId { // special libp2p decoding
     return decodePeerIdByName(name)
 }
-fun encodePeerId(peerId: PeerId) : String {  // special libp2p encoding
+
+fun encodePeerId(peerId: PeerId): String {  // special libp2p encoding
     return encode58(multihash(peerId))
 }
 

@@ -1,7 +1,7 @@
 package io.github.remmerw.asen.quic
 
 data class Responder(val protocols: Protocols) {
-    fun protocol(stream: Stream, protocol: String) {
+    suspend fun protocol(stream: Stream, protocol: String) {
         val handler = protocols.get(protocol)
         if (handler != null) {
             handler.protocol(stream)
@@ -11,7 +11,7 @@ data class Responder(val protocols: Protocols) {
     }
 
 
-    fun data(stream: Stream, protocol: String, data: ByteArray) {
+    suspend fun data(stream: Stream, protocol: String, data: ByteArray) {
         val handler = protocols.get(protocol)
         if (handler != null) {
             handler.data(stream, data)

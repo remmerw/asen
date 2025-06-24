@@ -43,7 +43,6 @@ kotlin {
                 implementation(libs.kotlinx.serialization.protobuf)
                 implementation(libs.hmac.sha2) // TODO replace in the future
                 implementation(libs.ktor.network)
-                implementation(libs.atomicfu)
                 implementation(libs.cryptography.core)
                 implementation(libs.indispensable) // TODO replace in the future
                 implementation(libs.cryptography.bigint)

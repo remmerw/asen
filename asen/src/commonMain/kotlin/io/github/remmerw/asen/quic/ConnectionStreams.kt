@@ -1,8 +1,8 @@
 package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
-import kotlinx.atomicfu.locks.reentrantLock
-import kotlinx.atomicfu.locks.withLock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicLong
@@ -12,7 +12,7 @@ import kotlin.concurrent.atomics.fetchAndIncrement
 open class ConnectionStreams(version: Int) :
     ConnectionFlow(version) {
     private val streams: MutableMap<Int, Stream> = mutableMapOf()
-    private val lock = reentrantLock()
+    private val mutex = Mutex()
 
     @OptIn(ExperimentalAtomicApi::class)
     private val maxOpenStreamIdUni = AtomicLong(Settings.MAX_STREAMS_UNI.toLong())
@@ -41,12 +41,12 @@ open class ConnectionStreams(version: Int) :
     @OptIn(ExperimentalAtomicApi::class)
     private val absoluteBidirectionalStreamIdLimit = AtomicLong(Int.MAX_VALUE.toLong())
 
-    internal fun createStream(
+    internal suspend fun createStream(
         connection: Connection,
         bidirectional: Boolean,
         streamHandlerFunction: (Stream) -> StreamHandler
     ): Stream {
-        lock.withLock {
+        mutex.withLock {
             val streamId = generateStreamId(bidirectional)
             val stream = Stream(connection, streamId, streamHandlerFunction)
             streams[streamId] = stream
@@ -70,12 +70,12 @@ open class ConnectionStreams(version: Int) :
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    internal fun processStreamFrame(
+    internal suspend fun processStreamFrame(
         connection: Connection,
         frame: FrameReceived.StreamFrame
     ) {
         val streamId = frame.streamId
-        var stream = lock.withLock { streams[streamId] }
+        var stream = mutex.withLock { streams[streamId] }
         if (stream != null) {
             stream.add(frame)
             // This implementation maintains a fixed maximum number of open streams, so when the peer closes a stream
@@ -91,7 +91,7 @@ open class ConnectionStreams(version: Int) :
                     stream = Stream(
                         connection, streamId
                     ) { stream: Stream -> connection.responder().createResponder(stream) }
-                    lock.withLock {
+                    mutex.withLock {
                         streams[streamId] = stream
                     }
                     stream.add(frame)
@@ -114,11 +114,11 @@ open class ConnectionStreams(version: Int) :
         }
     }
 
-    internal fun processMaxStreamDataFrame(frame: FrameReceived.MaxStreamDataFrame) {
+    internal suspend fun processMaxStreamDataFrame(frame: FrameReceived.MaxStreamDataFrame) {
         val streamId = frame.streamId
         val maxStreamData = frame.maxData
 
-        val stream = lock.withLock { streams[streamId] }
+        val stream = mutex.withLock { streams[streamId] }
         if (stream != null) {
             stream.increaseMaxStreamDataAllowed(maxStreamData)
         } else {
@@ -135,7 +135,7 @@ open class ConnectionStreams(version: Int) :
         return streamId % 2 == 0
     }
 
-    internal fun process(maxDataFrame: FrameReceived.MaxDataFrame) {
+    internal suspend fun process(maxDataFrame: FrameReceived.MaxDataFrame) {
         // If frames are received out of order, the new max can be smaller than the current value.
 
         val currentMaxDataAllowed = maxDataAllowed()
@@ -143,27 +143,27 @@ open class ConnectionStreams(version: Int) :
             val maxDataWasReached = currentMaxDataAllowed == maxDataAssigned()
             maxDataAllowed(maxDataFrame.maxData)
             if (maxDataWasReached) {
-                val streams = lock.withLock { this.streams.values.toList() }
+                val streams = mutex.withLock { this.streams.values.toList() }
                 streams.forEach { stream -> stream.unblock() }
             }
         }
     }
 
-    internal fun process(stopSendingFrame: FrameReceived.StopSendingFrame) {
+    internal suspend fun process(stopSendingFrame: FrameReceived.StopSendingFrame) {
         // https://www.rfc-editor.org/rfc/rfc9000.html#name-solicited-state-transitions
         // "A STOP_SENDING frame requests that the receiving endpoint send a RESET_STREAM frame."
 
-        val stream = lock.withLock { streams[stopSendingFrame.streamId] }
+        val stream = mutex.withLock { streams[stopSendingFrame.streamId] }
         stream?.resetStream(stopSendingFrame.errorCode)
     }
 
-    internal fun process(resetStreamFrame: FrameReceived.ResetStreamFrame) {
-        val stream = lock.withLock { streams[resetStreamFrame.streamId] }
+    internal suspend fun process(resetStreamFrame: FrameReceived.ResetStreamFrame) {
+        val stream = mutex.withLock { streams[resetStreamFrame.streamId] }
         stream?.terminate(resetStreamFrame.errorCode)
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    private fun increaseMaxOpenStreams(streamId: Int) {
+    private suspend fun increaseMaxOpenStreams(streamId: Int) {
         if (isUni(streamId) && maxOpenStreamIdUni.load() + 4 <
             absoluteUnidirectionalStreamIdLimit.load()
         ) {
@@ -254,18 +254,18 @@ open class ConnectionStreams(version: Int) :
         }
     }
 
-    override fun cleanup() {
+    override suspend fun cleanup() {
         super.cleanup()
-        val streams = lock.withLock { this.streams.values.toList() }
+        val streams = mutex.withLock { this.streams.values.toList() }
         streams.forEach { stream: Stream -> stream.terminate() }
 
-        lock.withLock {
+        mutex.withLock {
             this.streams.clear()
         }
     }
 
-    fun unregisterStream(streamId: Int) {
-        lock.withLock {
+    suspend fun unregisterStream(streamId: Int) {
+        mutex.withLock {
             streams.remove(streamId)
         }
     }

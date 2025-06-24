@@ -1,7 +1,7 @@
 package io.github.remmerw.asen.quic
 
-import kotlinx.atomicfu.locks.reentrantLock
-import kotlinx.atomicfu.locks.withLock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -9,7 +9,7 @@ import kotlin.math.max
 
 internal class LossDetector(private val connectionFlow: ConnectionFlow) {
     private val packetSentLog: MutableMap<Long, PacketStatus> = mutableMapOf()
-    private val lock = reentrantLock()
+    private val mutex = Mutex()
 
     @OptIn(ExperimentalAtomicApi::class)
     private val largestAcked = AtomicLong(-1L)
@@ -17,19 +17,19 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
     @Volatile
     private var isStopped = false
 
-    fun packetSent(packetStatus: PacketStatus) {
+    suspend fun packetSent(packetStatus: PacketStatus) {
         if (isStopped) {
             return
         }
 
         // During a reset operation, no new packets must be logged as sent.
-        lock.withLock {
+        mutex.withLock {
             packetSentLog[packetStatus.packet.packetNumber()] = packetStatus
         }
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    fun processAckFrameReceived(ackFrame: FrameReceived.AckFrame) {
+    suspend fun processAckFrameReceived(ackFrame: FrameReceived.AckFrame) {
         if (isStopped) {
             return
         }
@@ -48,7 +48,7 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
             i++
             val from = acknowledgedRanges[i]
             for (pn in to downTo from) {
-                val packetStatus = lock.withLock { packetSentLog.remove(pn) }
+                val packetStatus = mutex.withLock { packetSentLog.remove(pn) }
                 if (packetStatus != null) {
                     if (isAckEliciting(packetStatus.packet)) {
                         connectionFlow.processAckedPacket(packetStatus)
@@ -75,20 +75,20 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
         }
     }
 
-    fun stop() {
+    suspend fun stop() {
         isStopped = true
 
 
-        val packets = lock.withLock { packetSentLog.values.toList() }
+        val packets = mutex.withLock { packetSentLog.values.toList() }
         packets.forEach { packetStatus ->
             connectionFlow.discardBytesInFlight(packetStatus)
         }
-        lock.withLock {
+        mutex.withLock {
             packetSentLog.clear()
         }
     }
 
-    fun detectLostPackets() {
+    suspend fun detectLostPackets() {
         if (isStopped) {
             return
         }
@@ -109,7 +109,7 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
         // "In-flight:  Packets are considered in-flight when they have been sent
         //      and neither acknowledged nor declared lost, and they are not ACK-
         //      only."
-        val packets = lock.withLock {
+        val packets = mutex.withLock {
             packetSentLog.values.toList()
         }
         packets.forEach { packetStatus ->
@@ -133,7 +133,7 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
                 && p.timeSent.elapsedNow().inWholeMilliseconds > lossDelay
     }
 
-    private fun declareLost(packetStatus: PacketStatus) {
+    private suspend fun declareLost(packetStatus: PacketStatus) {
         if (isAckEliciting(packetStatus.packet)) {
             connectionFlow.registerLost(packetStatus)
         }
@@ -145,7 +145,9 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
         val frames = packetStatus.packet.frames()
         for (frame in frames) {
             when (frame.frameType) {
-                FrameType.MaxStreamsFrame, FrameType.MaxStreamDataFrame, FrameType.StopSendingFrame, FrameType.ResetStreamFrame, FrameType.RetireConnectionIdFrame, FrameType.StreamFrame, FrameType.MaxDataFrame, FrameType.HandshakeDoneFrame -> connectionFlow.insertRequest(
+                FrameType.MaxStreamsFrame, FrameType.MaxStreamDataFrame, FrameType.StopSendingFrame,
+                FrameType.ResetStreamFrame, FrameType.RetireConnectionIdFrame, FrameType.StreamFrame,
+                FrameType.MaxDataFrame, FrameType.HandshakeDoneFrame -> connectionFlow.insertRequest(
                     packetStatus.packet.level(),
                     frame
                 )
@@ -161,7 +163,7 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
                 else -> {}
             }
         }
-        lock.withLock {
+        mutex.withLock {
             packetSentLog.remove(packetStatus.packet.packetNumber())
         }
     }

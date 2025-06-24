@@ -1,9 +1,9 @@
 package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
-import kotlinx.atomicfu.locks.reentrantLock
-import kotlinx.atomicfu.locks.withLock
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
@@ -32,7 +32,7 @@ class Stream(
     // Send queue contains stream bytes to send in order. The position of the first byte buffer in
     // the queue determines the next byte(s) to send.
     private val sendQueue: Buffer = Buffer()
-    private val lock = reentrantLock()
+    private val mutex = Mutex()
 
     // Reset indicates whether the OutputStream has been reset.
     @OptIn(ExperimentalAtomicApi::class)
@@ -74,21 +74,21 @@ class Stream(
         this.streamHandler = streamHandlerFunction.invoke(this)
     }
 
-    internal fun add(frame: FrameReceived.StreamFrame) {
+    internal suspend fun add(frame: FrameReceived.StreamFrame) {
         val added = addFrame(frame)
         if (added) {
             broadcast() // this blocks the parsing of further packets
         }
     }
 
-    fun increaseMaxStreamDataAllowed(maxStreamData: Long) {
+    suspend fun increaseMaxStreamDataAllowed(maxStreamData: Long) {
         val streamWasBlocked = streamFlowControl.increaseMaxStreamDataAllowed(maxStreamData)
         if (streamWasBlocked) {
             unblock()
         }
     }
 
-    private fun broadcast() {
+    private suspend fun broadcast() {
         var bytesRead = 0
 
 
@@ -145,7 +145,7 @@ class Stream(
         }
     }
 
-    private fun updateAllowedFlowControl(bytesRead: Int) {
+    private suspend fun updateAllowedFlowControl(bytesRead: Int) {
         // Slide flow control window forward (with as much bytes as are read)
         receiverFlowControlLimit += bytesRead.toLong()
         connection.updateConnectionFlowControl(bytesRead)
@@ -177,7 +177,7 @@ class Stream(
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    fun resetStream(errorCode: Long) {
+    suspend fun resetStream(errorCode: Long) {
         if (!reset.exchange(true)) {
             resetErrorCode = errorCode
             sendRequestQueue.appendRequest(createResetFrame())
@@ -185,7 +185,7 @@ class Stream(
         terminate(errorCode)
     }
 
-    fun close() {
+    suspend fun close() {
         terminate()
     }
 
@@ -195,7 +195,7 @@ class Stream(
      *
      * This method is intentionally package-protected, as it should only be called by the StreamManager class.
      */
-    fun terminate(errorCode: Long) {
+    suspend fun terminate(errorCode: Long) {
         if (errorCode > 0) {
             debug("Terminate (reset) Stream $streamId Error code $errorCode")
         }
@@ -205,7 +205,7 @@ class Stream(
 
 
     @Suppress("unused")
-    fun stopLoading(errorCode: Int) {
+    suspend fun stopLoading(errorCode: Int) {
         // Note that QUIC specification does not define application protocol error codes.
         // By absence of an application specified error code, the arbitrary code 0 is used.
         if (!allDataReceived) {
@@ -214,7 +214,7 @@ class Stream(
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    fun terminate() {
+    suspend fun terminate() {
         reset.compareAndSet(expectedValue = false, newValue = true)
         sendQueue.clear()
         streamFlowControl.unregister()
@@ -233,15 +233,15 @@ class Stream(
     }
 
 
-    fun writeOutput(isFinal: Boolean, buffer: Buffer) {
+    suspend fun writeOutput(isFinal: Boolean, buffer: Buffer) {
         this.isFinal = isFinal
 
-        lock.withLock {
+        mutex.withLock {
             sendQueue.write(buffer, buffer.size)
         }
 
         sendRequestQueue.appendRequest(object : FrameSupplier {
-            override fun nextFrame(maxSize: Int): Frame? {
+            override suspend fun nextFrame(maxSize: Int): Frame? {
                 return sendFrame(maxSize)
             }
         }, Settings.MIN_FRAME_SIZE)
@@ -291,11 +291,11 @@ class Stream(
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    private fun sendFrame(maxFrameSize: Int): Frame? {
+    private suspend fun sendFrame(maxFrameSize: Int): Frame? {
         if (reset.load()) {
             return null
         }
-        lock.withLock {
+        mutex.withLock {
             if (!sendQueue.exhausted()) {
                 val flowControlLimit: Long = streamFlowControl.flowControlLimit
 
@@ -336,7 +336,7 @@ class Stream(
 
                     if (!sendQueue.exhausted()) {
                         sendRequestQueue.appendRequest(object : FrameSupplier {
-                            override fun nextFrame(maxSize: Int): Frame? {
+                            override suspend fun nextFrame(maxSize: Int): Frame? {
                                 return sendFrame(maxSize)
                             }
                         }, Settings.MIN_FRAME_SIZE)
@@ -369,11 +369,11 @@ class Stream(
         return null
     }
 
-    fun unblock() {
+    suspend fun unblock() {
         // Stream might have been blocked (or it might have filled the flow control window exactly),
         // queue send request and let sendFrame method determine whether there is more to send or not.
         sendRequestQueue.appendRequest(object : FrameSupplier {
-            override fun nextFrame(maxSize: Int): Frame? {
+            override suspend fun nextFrame(maxSize: Int): Frame? {
                 return sendFrame(maxSize)
             }
         }, Settings.MIN_FRAME_SIZE)

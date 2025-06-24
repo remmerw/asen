@@ -13,7 +13,7 @@ internal data class RequestResponse(val stream: Stream) : StreamHandler {
         return true
     }
 
-    override fun data(data: Buffer) {
+    override suspend fun data(data: Buffer) {
         throw IllegalStateException("should never be invoked")
     }
 }

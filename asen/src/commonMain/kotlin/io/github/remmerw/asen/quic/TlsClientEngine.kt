@@ -22,7 +22,7 @@ internal class TlsClientEngine(
     private lateinit var serverSupportedSignatureSchemes: List<SignatureScheme>
 
 
-    fun startHandshake() {
+    suspend fun startHandshake() {
         val signatureSchemes = listOf(
             SignatureScheme.RSA_PSS_RSAE_SHA256, SignatureScheme.ECDSA_SECP256R1_SHA256
         )
@@ -30,7 +30,7 @@ internal class TlsClientEngine(
     }
 
 
-    private fun startHandshake(signatureSchemes: List<SignatureScheme>) {
+    private suspend fun startHandshake(signatureSchemes: List<SignatureScheme>) {
         if (signatureSchemes
                 .any { scheme: SignatureScheme -> !AVAILABLE_SIGNATURES.contains(scheme) }
         ) {
@@ -155,7 +155,7 @@ internal class TlsClientEngine(
         statusHandler.handshakeSecretsKnown()
     }
 
-    override fun received(
+    override suspend fun received(
         encryptedExtensions: EncryptedExtensions,
         protectionKeysType: ProtectionKeysType
     ) {
@@ -260,7 +260,7 @@ internal class TlsClientEngine(
         status = Status.CertificateVerifyReceived
     }
 
-    override fun received(
+    override suspend fun received(
         finishedMessage: FinishedMessage,
         protectionKeysType: ProtectionKeysType
     ) {
@@ -366,7 +366,7 @@ internal class TlsClientEngine(
         status = Status.CertificateRequestReceived
     }
 
-    private fun sendClientAuth() {
+    private suspend fun sendClientAuth() {
         val certificateMessage =
             CertificateMessage.createCertificateMessage(certificate)
         sender.send(certificateMessage)

@@ -5,13 +5,16 @@ import io.github.remmerw.asen.core.DhtPeers
 import io.github.remmerw.asen.core.Key
 import io.github.remmerw.asen.core.createDhtPeer
 import io.github.remmerw.asen.core.createKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DhtPeersTest {
     @Test
-    fun saturationModeNotReplaced() {
+    fun saturationModeNotReplaced(): Unit = runBlocking(Dispatchers.IO) {
         val dhtPeers = DhtPeers(100)
         assertNotNull(dhtPeers)
 
@@ -35,7 +38,7 @@ class DhtPeersTest {
     }
 
     @Test
-    fun saturationModeReplaced() {
+    fun saturationModeReplaced(): Unit = runBlocking(Dispatchers.IO) {
         val dhtPeers = DhtPeers(100)
         assertNotNull(dhtPeers)
 
@@ -60,7 +63,7 @@ class DhtPeersTest {
     }
 
     @Test
-    fun random() {
+    fun random(): Unit = runBlocking(Dispatchers.IO) {
         val dhtPeers = DhtPeers(100)
         assertNotNull(dhtPeers)
 
@@ -89,7 +92,7 @@ class DhtPeersTest {
 
 
     @Test
-    fun fill() {
+    fun fill(): Unit = runBlocking(Dispatchers.IO) {
         val dhtPeers = DhtPeers(100)
         assertNotNull(dhtPeers)
 

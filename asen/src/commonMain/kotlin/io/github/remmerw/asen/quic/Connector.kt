@@ -1,35 +1,35 @@
 package io.github.remmerw.asen.quic
 
-import kotlinx.atomicfu.locks.reentrantLock
-import kotlinx.atomicfu.locks.withLock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 
 class Connector(private val reserve: (Any) -> Unit) {
     private val connections: MutableSet<ClientConnection> = mutableSetOf()
-    private val lock = reentrantLock()
+    private val mutex = Mutex()
 
-    fun connections(): Set<ClientConnection> {
-        return lock.withLock {
+    suspend fun connections(): Set<ClientConnection> {
+        return mutex.withLock {
             connections.toSet()
         }
     }
 
-    fun shutdown() {
-        lock.withLock {
+    suspend fun shutdown() {
+        mutex.withLock {
             connections.forEach { connection: ClientConnection -> connection.close() }
             connections.clear()
         }
     }
 
-    fun addConnection(connection: ClientConnection) {
+    suspend fun addConnection(connection: ClientConnection) {
         require(connection.isConnected) { "Connection not connected" }
-        lock.withLock {
+        mutex.withLock {
             connections.add(connection)
         }
     }
 
-    fun removeConnection(connection: ClientConnection) {
-        lock.withLock {
+    suspend fun removeConnection(connection: ClientConnection) {
+        mutex.withLock {
             connections.remove(connection)
         }
         if (connection.isMarked()) {

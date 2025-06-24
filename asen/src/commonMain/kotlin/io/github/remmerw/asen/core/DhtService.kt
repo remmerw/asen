@@ -19,7 +19,7 @@ import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 
 private const val DHT_PEER_SET_MAX_SIZE = 100
-private fun evalClosestPeers(pms: Message, peers: DhtPeers, key: Key): List<DhtPeer> {
+private suspend fun evalClosestPeers(pms: Message, peers: DhtPeers, key: Key): List<DhtPeer> {
     val dhtPeers: MutableList<DhtPeer> = arrayListOf()
     for (entry in pms.closerPeers) {
         if (entry.addrs.isNotEmpty()) {
@@ -96,7 +96,7 @@ private suspend fun initialPeers(asen: Asen, key: Key): DhtPeers {
 }
 
 
-private fun runRequest(
+private suspend fun runRequest(
     scope: CoroutineScope,
     channel: Channel<Connection>,
     asen: Asen, key: Key,

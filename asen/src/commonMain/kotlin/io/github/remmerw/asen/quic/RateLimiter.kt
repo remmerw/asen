@@ -5,7 +5,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 
 internal interface Limiter {
-    fun run()
+    suspend fun run()
 }
 
 internal class RateLimiter {
@@ -17,7 +17,7 @@ internal class RateLimiter {
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    fun execute(runnable: Limiter) {
+    suspend fun execute(runnable: Limiter) {
         if (attempts.incrementAndFetch() == nextOccasion.load()) {
             runnable.run()
             nextOccasion.store(nextOccasion.load() * Settings.FACTOR)

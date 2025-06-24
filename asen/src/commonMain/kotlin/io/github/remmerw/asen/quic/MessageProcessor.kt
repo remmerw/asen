@@ -5,11 +5,11 @@ internal interface Message
 
 internal interface MessageProcessor : Message {
 
-    fun received(clientHello: ClientHello)
+    suspend fun received(clientHello: ClientHello)
 
     fun received(serverHello: ServerHello)
 
-    fun received(
+    suspend fun received(
         encryptedExtensions: EncryptedExtensions,
         protectionKeysType: ProtectionKeysType
     )
@@ -24,7 +24,7 @@ internal interface MessageProcessor : Message {
         protectionKeysType: ProtectionKeysType
     )
 
-    fun received(
+    suspend fun received(
         finishedMessage: FinishedMessage,
         protectionKeysType: ProtectionKeysType
     )

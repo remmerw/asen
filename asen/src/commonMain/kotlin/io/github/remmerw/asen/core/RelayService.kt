@@ -41,7 +41,7 @@ internal data class ConnectRequest(
 
 
     @OptIn(ExperimentalSerializationApi::class)
-    override fun data(stream: Stream, data: ByteArray) {
+    override suspend fun data(stream: Stream, data: ByteArray) {
 
         if (stream.isMarked()) {
             val syncInfo = decodeMessage(target, data)
@@ -71,7 +71,7 @@ internal data class ConnectRequest(
     }
 
 
-    fun initializeConnect(stream: Stream) {
+    suspend fun initializeConnect(stream: Stream) {
         stream.writeOutput(
             true,
             encodeMessage(

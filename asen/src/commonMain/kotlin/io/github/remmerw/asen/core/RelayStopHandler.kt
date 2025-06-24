@@ -15,7 +15,7 @@ internal data class RelayStopHandler(
     private val relayMessage: RelayMessage
 ) :
     Handler {
-    override fun protocol(stream: Stream) {
+    override suspend fun protocol(stream: Stream) {
         stream.writeOutput(
             false, encode(
                 MULTISTREAM_PROTOCOL,
@@ -25,7 +25,7 @@ internal data class RelayStopHandler(
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    override fun data(stream: Stream, data: ByteArray) {
+    override suspend fun data(stream: Stream, data: ByteArray) {
         if (stream.isMarked()) {
 
             stream.writeOutput(
@@ -78,7 +78,7 @@ internal data class RelayStopHandler(
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private fun createStatusMessage(stream: Stream, status: Status) {
+    private suspend fun createStatusMessage(stream: Stream, status: Status) {
         val stopMessage = StopMessage(
             StopMessage.Type.STATUS,
             status = status

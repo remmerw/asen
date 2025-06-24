@@ -14,7 +14,7 @@ abstract class StreamState {
         reset = true
     }
 
-    protected abstract fun accept(stream: Stream, frame: ByteArray)
+    protected abstract suspend fun accept(stream: Stream, frame: ByteArray)
 
     fun length(): Int {
         if (frame != null) {
@@ -56,7 +56,7 @@ abstract class StreamState {
         }
 
 
-        fun iteration(streamState: StreamState, stream: Stream?, bytes: Buffer) {
+        suspend fun iteration(streamState: StreamState, stream: Stream?, bytes: Buffer) {
             if (!streamState.reset) {
                 if (streamState.length() == 0) {
                     streamState.frame = unsignedVarintReader(bytes)

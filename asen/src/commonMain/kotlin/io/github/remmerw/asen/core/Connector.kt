@@ -52,13 +52,13 @@ suspend fun connect(
     return clientConnection
 }
 
-fun createStream(connection: Connection, requester: Requester): Stream {
+suspend fun createStream(connection: Connection, requester: Requester): Stream {
     return connection.createStream({ stream: Stream ->
         AlpnRequester(stream, requester, AlpnState(requester))
     }, true)
 }
 
 
-fun createStream(connection: Connection): Stream {
+suspend fun createStream(connection: Connection): Stream {
     return connection.createStream({ stream: Stream -> RequestResponse(stream) }, true)
 }

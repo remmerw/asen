@@ -9,5 +9,5 @@ interface StreamHandler {
 
     fun readFully(): Boolean
 
-    fun data(data: Buffer)
+    suspend fun data(data: Buffer)
 }

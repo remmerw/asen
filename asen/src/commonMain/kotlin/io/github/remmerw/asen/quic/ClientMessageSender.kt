@@ -1,11 +1,11 @@
 package io.github.remmerw.asen.quic
 
 internal interface ClientMessageSender {
-    fun send(clientHello: ClientHello)
+    suspend fun send(clientHello: ClientHello)
 
-    fun send(finishedMessage: FinishedMessage)
+    suspend fun send(finishedMessage: FinishedMessage)
 
-    fun send(certificateMessage: CertificateMessage)
+    suspend fun send(certificateMessage: CertificateMessage)
 
-    fun send(certificateVerifyMessage: CertificateVerifyMessage)
+    suspend fun send(certificateVerifyMessage: CertificateVerifyMessage)
 }

@@ -178,7 +178,7 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         return packetAssemblers[level.ordinal]!!
     }
 
-    internal fun packetSent(
+    internal suspend fun packetSent(
         packet: Packet,
         size: Int,
         timeSent: TimeSource.Monotonic.ValueTimeMark
@@ -190,15 +190,15 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         }
     }
 
-    internal fun insertRequest(level: Level, frame: Frame) {
+    internal suspend fun insertRequest(level: Level, frame: Frame) {
         sendRequestQueue(level).insertRequest(frame)
     }
 
-    internal fun addRequest(level: Level, frame: Frame) {
+    internal suspend fun addRequest(level: Level, frame: Frame) {
         sendRequestQueue(level).appendRequest(frame)
     }
 
-    internal fun process(ackFrame: FrameReceived.AckFrame, level: Level) {
+    internal suspend fun process(ackFrame: FrameReceived.AckFrame, level: Level) {
         ackGenerator(level).ackFrameReceived(ackFrame)
 
         lossDetectors[level.ordinal]!!.processAckFrameReceived(ackFrame)
@@ -207,7 +207,7 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
     /**
      * Stop sending packets, but don't shutdown yet, so connection close can be sent.
      */
-    fun clearRequests() {
+    suspend fun clearRequests() {
         // Stop sending packets, so discard any packet waiting to be send.
         for (queue in sendRequestQueues) {
             queue!!.clear()
@@ -217,7 +217,7 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         stopRecovery()
     }
 
-    open fun cleanup() {
+    open suspend fun cleanup() {
         for (level in Level.levels()) {
             discard(level)
         }
@@ -238,7 +238,7 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         return discardedLevels[level.ordinal]!!
     }
 
-    internal fun discard(level: Level) {
+    internal suspend fun discard(level: Level) {
         discardedLevels[level.ordinal] = true
 
         // clear all send requests and probes on that level
@@ -484,13 +484,13 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         bytesInFlight.addAndFetch(packetStatus.size.toLong())
     }
 
-    fun lossDetection() {
+    suspend fun lossDetection() {
         for (level in Level.levels()) {
             lossDetectors[level.ordinal]!!.detectLostPackets()
         }
     }
 
-    private fun stopRecovery() {
+    private suspend fun stopRecovery() {
         for (lossDetector in lossDetectors) {
             lossDetector!!.stop()
         }

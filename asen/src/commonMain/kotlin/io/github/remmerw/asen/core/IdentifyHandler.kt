@@ -11,7 +11,7 @@ internal data class IdentifyHandler(val peerId: PeerId) : Handler {
 
 
     @OptIn(ExperimentalSerializationApi::class)
-    override fun protocol(stream: Stream) {
+    override suspend fun protocol(stream: Stream) {
 
         val identify: Identify = identify(
             peerId, "asen/1.0.0/", stream.connection.responder().protocols.names()
@@ -23,7 +23,7 @@ internal data class IdentifyHandler(val peerId: PeerId) : Handler {
     }
 
 
-    override fun data(stream: Stream, data: ByteArray) {
+    override suspend fun data(stream: Stream, data: ByteArray) {
         if (data.isNotEmpty()) {
             throw Exception("not expected data received for identify")
         }

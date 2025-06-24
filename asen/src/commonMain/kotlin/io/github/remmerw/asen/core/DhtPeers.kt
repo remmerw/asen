@@ -1,15 +1,15 @@
 package io.github.remmerw.asen.core
 
-import kotlinx.atomicfu.locks.reentrantLock
-import kotlinx.atomicfu.locks.withLock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal class DhtPeers(val saturation: Int) {
     private val peerSet: MutableSet<DhtPeer> = mutableSetOf()
-    private val lock = reentrantLock()
+    private val mutex = Mutex()
 
 
-    internal fun nextPeer(): DhtPeer? {
-        return lock.withLock {
+    internal suspend fun nextPeer(): DhtPeer? {
+        return mutex.withLock {
             val value = peerSet.minOrNull()
             if (value != null) {
                 peerSet.remove(value)
@@ -18,8 +18,8 @@ internal class DhtPeers(val saturation: Int) {
         }
     }
 
-    internal fun add(dhtPeer: DhtPeer): Boolean {
-        return lock.withLock {
+    internal suspend fun add(dhtPeer: DhtPeer): Boolean {
+        return mutex.withLock {
             if (peerSet.add(dhtPeer)) {
                 if (peerSet.size >= saturation) {
                     val last = peerSet.maxOf { it }
