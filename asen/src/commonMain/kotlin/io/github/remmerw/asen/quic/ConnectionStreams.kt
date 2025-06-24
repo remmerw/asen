@@ -242,7 +242,8 @@ open class ConnectionStreams(version: Int) :
         } else {
             debug(
                 ("Attempt to reduce value of initial_max_streams_uni from "
-                        + maxStreamsAcceptedByPeerUni + " to " + initialMaxStreamsUni + "; ignoring.")
+                        + maxStreamsAcceptedByPeerUni + " to "
+                        + initialMaxStreamsUni + "; ignoring.")
             )
         }
     }
