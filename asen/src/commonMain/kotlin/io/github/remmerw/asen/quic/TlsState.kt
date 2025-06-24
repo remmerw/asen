@@ -17,8 +17,17 @@ internal class TlsState(
     private val transcriptHash: TranscriptHash
 ) {
 
-    private val emptyHash: ByteArray
-    private val psk: ByteArray?
+    // https://tools.ietf.org/html/rfc8446#section-7.1
+    // "The Hash function used by Transcript-Hash and HKDF is the cipher suite hash algorithm."
+    private val emptyHash: ByteArray = CryptographyProvider.Default
+        .get(SHA256)
+        .hasher()
+        .hashBlocking(ByteArray(0))
+
+    // https://tools.ietf.org/html/rfc8446#section-7.1
+    // "If a given secret is not available, then the 0-value consisting of a
+    //   string of Hash.length bytes set to zeros is used."
+    private val psk = ByteArray(HASH_LENGTH.toInt())
 
     private var pskSelected = false
     private var serverSharedKey: ECDH.PublicKey? = null
@@ -35,19 +44,6 @@ internal class TlsState(
     private lateinit var sharedSecret: ByteArray
 
     init {
-
-        // https://tools.ietf.org/html/rfc8446#section-7.1
-        // "The Hash function used by Transcript-Hash and HKDF is the cipher suite hash algorithm."
-
-        emptyHash = CryptographyProvider.Default
-            .get(SHA256)
-            .hasher()
-            .hashBlocking(ByteArray(0))
-
-        // https://tools.ietf.org/html/rfc8446#section-7.1
-        // "If a given secret is not available, then the 0-value consisting of a
-        //   string of Hash.length bytes set to zeros is used."
-        this.psk = ByteArray(HASH_LENGTH.toInt())
 
         computeEarlySecret(psk)
     }
@@ -150,7 +146,7 @@ internal class TlsState(
     }
 
     fun setNoPskSelected() {
-        if (psk != null && !pskSelected) {
+        if (!pskSelected) {
             // Recompute early secret, as psk is not accepted by server.
             // https://tools.ietf.org/html/rfc8446#section-7.1
             // "... if no PSK is selected, it will then need to compute the Early Secret corresponding to the zero PSK."
