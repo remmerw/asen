@@ -58,7 +58,7 @@ class UtilsTest {
     fun stressToBase58() {
         repeat(TestEnv.ITERATIONS) {
             val peerId = TestEnv.randomPeerId()
-            val toBase58 = peerId.toBase58()
+            val toBase58 = encodePeerId(peerId)
             assertNotNull(toBase58)
             val cmp = decodePeerId(toBase58)
             assertEquals(peerId, cmp)
@@ -166,7 +166,7 @@ class UtilsTest {
         peerId = decodePeerId("12D3KooWD3eckifWpRn9wQpMG9R9hX3sD158z7EqHWmweQAJU5SA")
         assertNotNull(peerId)
 
-        peerId = decodePeerId(random.toBase58())
+        peerId = decodePeerId(encodePeerId(random))
         assertNotNull(peerId)
         assertEquals(peerId, random)
     }

@@ -410,10 +410,6 @@ data class PeerId(val hash: ByteArray) {
         return hash.contentHashCode() // ok, checked, maybe opt
     }
 
-    fun toBase58(): String {
-        return encode58(multihash(this))
-    }
-
     init {
         require(hash.size == 32) { "hash size must be 32" }
     }
@@ -515,8 +511,13 @@ fun createPeeraddr(peerId: String, address: ByteArray, port: UShort): Peeraddr {
     return createPeeraddr(decodePeerId(peerId), address, port)
 }
 
-fun decodePeerId(name: String): PeerId {
+
+
+fun decodePeerId(name: String): PeerId { // special libp2p decoding
     return decodePeerIdByName(name)
+}
+fun encodePeerId(peerId: PeerId) : String {  // special libp2p encoding
+    return encode58(multihash(peerId))
 }
 
 fun parseAddress(peerId: PeerId, bytes: ByteArray): Peeraddr? {
