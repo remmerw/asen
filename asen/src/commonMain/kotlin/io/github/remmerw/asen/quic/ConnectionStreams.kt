@@ -221,16 +221,13 @@ open class ConnectionStreams(version: Int) :
      */
     @OptIn(ExperimentalAtomicApi::class)
     fun initialMaxStreamsBidi(initialMaxStreamsBidi: Long) {
-        var initMaxStreamsBidi = initialMaxStreamsBidi
-        if (initMaxStreamsBidi >= maxStreamsAcceptedByPeerBidi.load()) {
-            maxStreamsAcceptedByPeerBidi.store(initMaxStreamsBidi)
-            if (initMaxStreamsBidi > Int.MAX_VALUE) {
-                initMaxStreamsBidi = Int.MAX_VALUE.toLong()
-            }
+        if (initialMaxStreamsBidi >= maxStreamsAcceptedByPeerBidi.load()) {
+            maxStreamsAcceptedByPeerBidi.store(initialMaxStreamsBidi)
         } else {
             debug(
                 ("Attempt to reduce value of initial_max_streams_bidi from "
-                        + maxStreamsAcceptedByPeerBidi + " to " + initMaxStreamsBidi + "; ignoring.")
+                        + maxStreamsAcceptedByPeerBidi + " to "
+                        + initialMaxStreamsBidi + "; ignoring.")
             )
         }
     }
@@ -240,16 +237,12 @@ open class ConnectionStreams(version: Int) :
      */
     @OptIn(ExperimentalAtomicApi::class)
     fun initialMaxStreamsUni(initialMaxStreamsUni: Long) {
-        var initMaxStreamsUni = initialMaxStreamsUni
-        if (initMaxStreamsUni >= maxStreamsAcceptedByPeerUni.load()) {
-            maxStreamsAcceptedByPeerUni.store(initMaxStreamsUni)
-            if (initMaxStreamsUni > Int.MAX_VALUE) {
-                initMaxStreamsUni = Int.MAX_VALUE.toLong()
-            }
+        if (initialMaxStreamsUni >= maxStreamsAcceptedByPeerUni.load()) {
+            maxStreamsAcceptedByPeerUni.store(initialMaxStreamsUni)
         } else {
             debug(
                 ("Attempt to reduce value of initial_max_streams_uni from "
-                        + maxStreamsAcceptedByPeerUni + " to " + initMaxStreamsUni + "; ignoring.")
+                        + maxStreamsAcceptedByPeerUni + " to " + initialMaxStreamsUni + "; ignoring.")
             )
         }
     }
