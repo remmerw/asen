@@ -56,10 +56,9 @@ class Asen internal constructor(
     private val keys: Keys,
     private val certificate: Certificate,
     private val bootstrap: List<Peeraddr>,
-    private val peerStore: PeerStore,
-    internal val reserve: (Any) -> Unit
+    private val peerStore: PeerStore
 ) {
-    private val connector: Connector = Connector(reserve)
+    private val connector: Connector = Connector()
     private val mutex = Mutex()
 
     /**
@@ -215,15 +214,13 @@ class Asen internal constructor(
  * @param keys public and private ed25519 keys for the peer ID, signing, verification and authentication
  * @param bootstrap initial bootstrap peers for the DHT (without bootstrap peers it can only be used for testing)
  * @param peerStore additional DHT peers (note the list will be filled and readout)
- * @param reserve callback notification when number of reservations have changed
  */
 fun newAsen(
     keys: Keys = generateKeys(),
     bootstrap: List<Peeraddr> = bootstrap(),
-    peerStore: PeerStore = MemoryPeers(),
-    reserve: (Any) -> Unit = {}
+    peerStore: PeerStore = MemoryPeers()
 ): Asen {
-    return Asen(keys, createCertificate(keys), bootstrap, peerStore, reserve)
+    return Asen(keys, createCertificate(keys), bootstrap, peerStore)
 }
 
 class MemoryPeers : PeerStore {
@@ -336,7 +333,6 @@ private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean
     try {
         reserveHop(connection, asen.peerId())
         connection.mark()
-        asen.reserve.invoke(Any())
         return true
     } catch (_: Throwable) {
         connection.close()

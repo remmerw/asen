@@ -44,9 +44,7 @@ class ConnectTest {
     @Test
     fun testIdentify(): Unit = runBlocking(Dispatchers.IO) {
 
-        val server = newAsen(
-            reserve = { event: Any -> println("Reservation Event") }
-        )
+        val server = newAsen()
         val address = byteArrayOf(127, 0, 0, 1)
         val cmp = AddressUtil.textToNumericFormatV4("127.0.0.1")
         assertNotNull(cmp)

@@ -89,7 +89,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             ...
-            implementation("io.github.remmerw:asen:0.2.8")
+            implementation("io.github.remmerw:asen:0.2.9")
         }
         ...
     }
@@ -131,13 +131,11 @@ val asen = newAsen(bootstrap= bootstrap)
  * @param keys public and private ed25519 keys for the peer ID, signing, verification and authentication
  * @param bootstrap initial bootstrap peers for the DHT (without bootstrap peers it can only be used for testing)
  * @param peerStore additional DHT peers (note the list will be filled and readout)
- * @param reserve callback notification when number of reservations have changed
  */
 fun newAsen(
     keys: Keys = generateKeys(),
     bootstrap: List<Peeraddr> = bootstrap(),
-    peerStore: PeerStore = MemoryPeers(),
-    reserve: (Any) -> Unit = {}
+    peerStore: PeerStore = MemoryPeers()
 ): Asen {
 ...
 }
@@ -232,10 +230,8 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
     @Test
     fun testConnection(): Unit = runBlocking(Dispatchers.IO) {
 
-        val bob = newAsen(
-            reserve = { event: Any -> println("Reservation Bob") })
-        val alice = newAsen(
-            reserve = { event: Any -> println("Reservation Alice") })
+        val bob = newAsen()
+        val alice = newAsen()
 
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays

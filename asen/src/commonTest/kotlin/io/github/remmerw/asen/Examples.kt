@@ -13,10 +13,8 @@ class Examples {
     @Test
     fun testConnection(): Unit = runBlocking(Dispatchers.IO) {
 
-        val bob = newAsen(
-            reserve = { event: Any -> println("Reservation Bob") })
-        val alice = newAsen(
-            reserve = { event: Any -> println("Reservation Alice") })
+        val bob = newAsen()
+        val alice = newAsen()
 
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays

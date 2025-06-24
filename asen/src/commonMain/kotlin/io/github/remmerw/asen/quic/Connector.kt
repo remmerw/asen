@@ -4,7 +4,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 
-class Connector(private val reserve: (Any) -> Unit) {
+class Connector() {
     private val connections: MutableSet<ClientConnection> = mutableSetOf()
     private val mutex = Mutex()
 
@@ -31,9 +31,6 @@ class Connector(private val reserve: (Any) -> Unit) {
     suspend fun removeConnection(connection: ClientConnection) {
         mutex.withLock {
             connections.remove(connection)
-        }
-        if (connection.isMarked()) {
-            reserve.invoke(Any())
         }
     }
 }
