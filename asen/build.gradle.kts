@@ -1,6 +1,5 @@
 @file:OptIn(ExperimentalWasmDsl::class, ExperimentalKotlinGradlePluginApi::class)
 
-import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -21,7 +20,6 @@ kotlin {
     androidTarget {
         instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
         publishLibraryVariants("release")
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
@@ -80,6 +78,7 @@ kotlin {
 
         androidInstrumentedTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation("androidx.test:runner:1.6.2")
         }
     }
 }
@@ -96,11 +95,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+    packaging {
+        resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
+    }
 }
 
 
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
 
     signAllPublications()
 
