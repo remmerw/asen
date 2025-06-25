@@ -195,13 +195,11 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
      * @param peeraddrs the peeraddrs which should be announced to incoming connecting peers via relays
      * @param maxReservation number of max reservations
      * @param timeout in seconds
-     * @param running true, when reservation is actually running otherwise false when done
      */
     suspend fun makeReservations(
         peeraddrs: List<Peeraddr>,
         maxReservation: Int,
-        timeout: Int,
-        running: (Boolean) -> Unit = {}
+        timeout: Int
     ) {
         ...
     }
