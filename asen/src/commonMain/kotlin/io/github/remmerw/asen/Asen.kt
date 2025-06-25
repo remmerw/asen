@@ -140,22 +140,18 @@ class Asen internal constructor(
      * @param peeraddrs the peeraddrs which should be announced to incoming connecting peers via relays
      * @param maxReservation number of max reservations
      * @param timeout in seconds
-     * @param running true, when reservation is actually running otherwise false when done
      */
     suspend fun makeReservations(
         peeraddrs: List<Peeraddr>,
         maxReservation: Int,
-        timeout: Int,
-        running: (Boolean) -> Unit = {}
+        timeout: Int
     ) {
         if (mutex.tryLock()) {
             try {
-                running.invoke(true)
                 makeReservations(this, peeraddrs, maxReservation, timeout)
             } catch (throwable: Throwable) {
                 debug(throwable)
             } finally {
-                running.invoke(false)
                 mutex.unlock()
             }
         }
