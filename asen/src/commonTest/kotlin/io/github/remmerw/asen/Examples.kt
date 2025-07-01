@@ -19,9 +19,12 @@ class Examples {
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
         val publicAddresses = listOf(
+
+            // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                byteArrayOf(127, 0, 0, 1), 5001.toUShort()
+                bob.publicAddress()!!,
+                5001.toUShort()
             )
         )
 

@@ -22,6 +22,7 @@ import dev.whyoleg.cryptography.bigint.BigInt
 import dev.whyoleg.cryptography.bigint.decodeToBigInt
 import dev.whyoleg.cryptography.bigint.encodeToByteArray
 import dev.whyoleg.cryptography.bigint.toBigInt
+import io.github.remmerw.asen.Asen
 import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
 import io.github.remmerw.asen.PeerId
@@ -34,10 +35,21 @@ import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.parseAddress
 import io.github.remmerw.asen.parsePeerId
 import io.github.remmerw.asen.quic.Certificate
+import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.quic.StreamState
 import io.github.remmerw.asen.sign
 import io.github.remmerw.frey.DnsResolver
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -46,6 +58,10 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.experimental.xor
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -486,6 +502,143 @@ internal suspend fun resolveAddresses(): Set<Peeraddr> {
         }
     }
     return addresses
+}
+
+
+@OptIn(ExperimentalAtomicApi::class)
+suspend fun ipv6Address(asen: Asen): ByteArray? {
+
+    val address: AtomicReference<ByteArray?> = AtomicReference(null)
+    val addresses = resolveAddresses() // this you can trust
+
+    try {
+        coroutineScope {
+            val scope = this
+            addresses.forEach { peeraddr ->
+                if (peeraddr.inet6()) {
+                    scope.launch {
+                        val observed = observedAddress(asen, peeraddr)
+                        if (observed != null) {
+                            address.store(observed)
+                            scope.cancel()
+                        }
+                    }
+                }
+            }
+        }
+    } catch (_: Throwable) {
+    }
+    return address.load()
+}
+
+@OptIn(ExperimentalAtomicApi::class)
+internal suspend fun doReservations(
+    asen: Asen,
+    peeraddrs: List<Peeraddr>,
+    maxReservation: Int,
+    timeout: Int
+) {
+
+    val handledRelays: MutableSet<PeerId> = mutableSetOf()
+
+    // check if reservations are still valid and not expired
+    for (connection in asen.connector().connections()) {
+        if (connection.isMarked()) {
+            handledRelays.add(connection.remotePeeraddr().peerId) // still valid
+        }
+    }
+    val signature = newSignature(asen.keys(), peeraddrs)
+    val signatureMessage = relayMessage(signature, peeraddrs)
+    val valid = AtomicInt(handledRelays.size)
+
+
+    try {
+        val scope = CoroutineScope(Dispatchers.IO)
+        val key = createPeerIdKey(asen.peerId())
+        // fill up reservations [not yet enough]
+        withTimeout(timeout * 1000L) {
+
+            val channel: Channel<Connection> = Channel()
+
+            scope.launch {
+                findClosestPeers(scope, channel, asen, key)
+            }
+
+
+            for (connection in channel) {
+                // handled relays with given peerId
+                if (!handledRelays.add(connection.remotePeeraddr().peerId)) {
+                    break
+                }
+
+                if (valid.load() > maxReservation) {
+                    // no more reservations
+                    break  // just return, let the refresh mechanism finished
+                }
+
+                if (!scope.isActive) {
+                    break
+                }
+
+                // add stop handler to connection
+                connection.responder().protocols.put(
+                    RELAY_PROTOCOL_STOP, RelayStopHandler(
+                        asen.peerId(), signatureMessage
+                    )
+                )
+
+                scope.launch {
+                    if (makeReservation(asen, connection)) {
+                        if (valid.incrementAndFetch() > maxReservation) {
+                            // done
+                            scope.cancel()
+                        }
+                    }
+                }
+            }
+        }
+    } catch (_: CancellationException) {
+        // ignore
+    } catch (throwable: Throwable) {
+        debug(throwable)
+    }
+}
+
+
+private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean {
+    connection.enableKeepAlive()
+    try {
+        reserveHop(connection, asen.peerId())
+        connection.mark()
+        return true
+    } catch (_: Throwable) {
+        connection.close()
+        return false
+    }
+}
+
+
+private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): ByteArray? {
+    try {
+        val connection: Connection = connect(asen, peeraddr)
+        try {
+            asen.peerStore().store(peeraddr)
+            val info = identify(connection)
+            if (info.observedAddress != null) {
+                val observed = parseAddress(
+                    asen.peerId(),
+                    info.observedAddress
+                )
+                if (observed != null) {
+                    return observed.address
+                }
+            }
+        } finally {
+            connection.close()
+        }
+    } catch (_: Throwable) {
+    }
+    return null
 }
 
 private suspend fun resolveAddresses(

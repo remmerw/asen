@@ -4,20 +4,17 @@ import io.github.andreypfau.curve25519.ed25519.Ed25519
 import io.github.andreypfau.curve25519.ed25519.Ed25519PrivateKey
 import io.github.andreypfau.curve25519.ed25519.Ed25519PublicKey
 import io.github.remmerw.asen.core.Base58
-import io.github.remmerw.asen.core.RELAY_PROTOCOL_STOP
-import io.github.remmerw.asen.core.RelayStopHandler
 import io.github.remmerw.asen.core.connect
 import io.github.remmerw.asen.core.connectHop
 import io.github.remmerw.asen.core.createCertificate
 import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
+import io.github.remmerw.asen.core.doReservations
 import io.github.remmerw.asen.core.findClosestPeers
-import io.github.remmerw.asen.core.identify
+import io.github.remmerw.asen.core.ipv6Address
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
-import io.github.remmerw.asen.core.reserveHop
-import io.github.remmerw.asen.core.resolveAddresses
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Connector
@@ -35,10 +32,8 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.io.readUShort
-import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.random.Random
 
 
@@ -63,6 +58,10 @@ class Asen internal constructor(
     private val connector: Connector = Connector()
     private val mutex = Mutex()
 
+    suspend fun publicAddress(): ByteArray? {
+        return ipv6Address(this)
+    }
+
     /**
      * Find the peer addresses of given target peer ID via the relay.
      *
@@ -82,40 +81,6 @@ class Asen internal constructor(
         } finally {
             connection?.close()
         }
-    }
-
-    suspend fun publicAddress(): ByteArray? {
-        val addresses = resolveAddresses() // this you can trust
-
-        // todo in parallel
-        addresses.forEach { peeraddr ->
-            if (peeraddr.inet6()) {
-                try {
-                    val connection: Connection = connect(this, peeraddr)
-                    try {
-                        peerStore.store(peeraddr)
-                        val info = identify(connection)
-                        if (info.observedAddress != null) {
-
-                            val peeraddr = parseAddress(
-                                peerId(),
-                                info.observedAddress
-                            )
-                            if (peeraddr != null) {
-                                return peeraddr.address
-                            }
-                        }
-                    } catch (throwable: Throwable) {
-                        debug(throwable)
-                    } finally {
-                        connection.close()
-                    }
-                } catch (throwable: Throwable) {
-                    debug(throwable)
-                }
-            }
-        }
-        return null
     }
 
     /**
@@ -184,7 +149,7 @@ class Asen internal constructor(
     ) {
         if (mutex.tryLock()) {
             try {
-                makeReservations(this, peeraddrs, maxReservation, timeout)
+                doReservations(this, peeraddrs, maxReservation, timeout)
             } catch (throwable: Throwable) {
                 debug(throwable)
             } finally {
@@ -199,7 +164,13 @@ class Asen internal constructor(
      * @return list of relay peer addresses
      */
     suspend fun reservations(): List<Peeraddr> {
-        return reservations(this)
+        val peeraddrs = mutableListOf<Peeraddr>()
+        for (connection in connector().connections()) {
+            if (connection.isMarked()) {
+                peeraddrs.add(connection.remotePeeraddr())
+            }
+        }
+        return peeraddrs
     }
 
     suspend fun hasReservations(): Boolean {
@@ -286,101 +257,6 @@ fun bootstrap(): List<Peeraddr> {
     return peeraddrs
 }
 
-@OptIn(ExperimentalAtomicApi::class)
-private suspend fun makeReservations(
-    asen: Asen,
-    peeraddrs: List<Peeraddr>,
-    maxReservation: Int,
-    timeout: Int
-) {
-
-    val handledRelays: MutableSet<PeerId> = mutableSetOf()
-
-    // check if reservations are still valid and not expired
-    for (connection in asen.connector().connections()) {
-        if (connection.isMarked()) {
-            handledRelays.add(connection.remotePeeraddr().peerId) // still valid
-        }
-    }
-    val signature = newSignature(asen.keys(), peeraddrs)
-    val signatureMessage = relayMessage(signature, peeraddrs)
-    val valid = AtomicInt(handledRelays.size)
-
-
-    try {
-        val scope = CoroutineScope(Dispatchers.IO)
-        val key = createPeerIdKey(asen.peerId())
-        // fill up reservations [not yet enough]
-        withTimeout(timeout * 1000L) {
-
-            val channel: Channel<Connection> = Channel()
-
-            scope.launch {
-                findClosestPeers(scope, channel, asen, key)
-            }
-
-
-            for (connection in channel) {
-                // handled relays with given peerId
-                if (!handledRelays.add(connection.remotePeeraddr().peerId)) {
-                    break
-                }
-
-                if (valid.load() > maxReservation) {
-                    // no more reservations
-                    break  // just return, let the refresh mechanism finished
-                }
-
-                if (!scope.isActive) {
-                    break
-                }
-
-                // add stop handler to connection
-                connection.responder().protocols.put(
-                    RELAY_PROTOCOL_STOP, RelayStopHandler(
-                        asen.peerId(), signatureMessage
-                    )
-                )
-
-                scope.launch {
-                    if (makeReservation(asen, connection)) {
-                        if (valid.incrementAndFetch() > maxReservation) {
-                            // done
-                            scope.cancel()
-                        }
-                    }
-                }
-            }
-        }
-    } catch (_: CancellationException) {
-        // ignore
-    } catch (throwable: Throwable) {
-        debug(throwable)
-    }
-}
-
-
-private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean {
-    connection.enableKeepAlive()
-    try {
-        reserveHop(connection, asen.peerId())
-        connection.mark()
-        return true
-    } catch (_: Throwable) {
-        connection.close()
-        return false
-    }
-}
-
-private suspend fun reservations(asen: Asen): List<Peeraddr> {
-    val peeraddrs = mutableListOf<Peeraddr>()
-    for (connection in asen.connector().connections()) {
-        if (connection.isMarked()) {
-            peeraddrs.add(connection.remotePeeraddr())
-        }
-    }
-    return peeraddrs
-}
 
 data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) {
     init {
