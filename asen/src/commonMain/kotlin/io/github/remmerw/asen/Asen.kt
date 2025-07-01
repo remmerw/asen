@@ -24,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -108,14 +108,18 @@ class Asen internal constructor(
 
                 val handled: MutableSet<PeerId> = mutableSetOf()
                 for (connection in channel) {
-                    if (!scope.isActive) {
-                        break
-                    }
+                    ensureActive()
 
                     try {
                         if (handled.add(connection.remotePeeraddr().peerId)) {
-                            done.store(connectHop(connection, target, signatureMessage))
-                            scope.cancel()
+
+                            val addresses =
+                                connectHop(connection, target, signatureMessage)
+
+                            if(!addresses.isEmpty()) {
+                                done.store(addresses)
+                                scope.cancel()
+                            }
                         }
                     } catch (_: CancellationException) {
                         // ignore

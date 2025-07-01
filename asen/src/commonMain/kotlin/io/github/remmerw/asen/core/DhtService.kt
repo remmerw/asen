@@ -111,6 +111,7 @@ private suspend fun runRequest(
         val hasPeer = nextPeer != null
         if (hasPeer) {
             if (done.add(nextPeer.peeraddr)) {
+
                 scope.launch {
                     semaphore.withPermit {
                         try {
