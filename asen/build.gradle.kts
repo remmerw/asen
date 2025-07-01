@@ -47,6 +47,8 @@ kotlin {
                 implementation(libs.indispensable) // TODO replace in the future
                 implementation(libs.cryptography.bigint)
                 implementation(libs.curve25519) // TODO replace in the future
+
+                implementation("io.github.remmerw:frey:0.0.1")
             }
         }
 
