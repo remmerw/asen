@@ -26,6 +26,7 @@ import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
 import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
+import io.github.remmerw.asen.debug
 import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.parseAddress
 import io.github.remmerw.asen.parsePeerId
@@ -33,6 +34,7 @@ import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.quic.StreamState
 import io.github.remmerw.asen.sign
+import io.github.remmerw.frey.DnsResolver
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -450,6 +452,49 @@ internal fun concat(vararg chunks: ByteArray): ByteArray {
     for (chunk in chunks) {
         chunk.copyInto(result, pos, 0, chunk.size)
         pos += chunk.size
+    }
+    return result
+}
+
+internal suspend fun resolveAddresses() : Set<Peeraddr> {
+    val addresses : MutableSet<Peeraddr> = mutableSetOf()
+    val dnsResolver = DnsResolver()
+    resolveAddresses(dnsResolver,
+        "bootstrap.libp2p.io", mutableSetOf()).forEach { entry ->
+        try {
+            println(entry)
+        } catch (throwable: Throwable){
+            debug(throwable)
+        }
+    }
+    return addresses
+}
+
+private suspend fun resolveAddresses(
+    dnsResolver: DnsResolver,
+    host: String,
+    hosts: MutableSet<String>
+): Set<String> {
+    val result: MutableSet<String> = mutableSetOf()
+    if(!hosts.add(host)){
+        return result
+    }
+    dnsResolver.resolveDnsAddr(host).forEach { entry ->
+        if(entry.startsWith("/dnsaddr/")){
+            var child = entry.replaceFirst("/dnsaddr/", "")
+            val index = child.indexOf('/')
+            if(index > 0){
+                child = child.substring(0, index)
+                result.addAll(resolveAddresses(dnsResolver, child, hosts))
+            } else {
+                result.addAll(resolveAddresses(dnsResolver, child, hosts))
+            }
+        } else {
+            if(entry.contains("/quic-v1/p2p/")) {
+                result.add(entry)
+            }
+        }
+
     }
     return result
 }
