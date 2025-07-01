@@ -12,10 +12,12 @@ import io.github.remmerw.asen.core.createCertificate
 import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.findClosestPeers
+import io.github.remmerw.asen.core.identify
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.core.reserveHop
+import io.github.remmerw.asen.core.resolveAddresses
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Connector
@@ -80,6 +82,40 @@ class Asen internal constructor(
         } finally {
             connection?.close()
         }
+    }
+
+    suspend fun publicAddress(): ByteArray? {
+        val addresses = resolveAddresses() // this you can trust
+
+        // todo in parallel
+        addresses.forEach { peeraddr ->
+            if (peeraddr.inet6()) {
+                try {
+                    val connection: Connection = connect(this, peeraddr)
+                    try {
+                        peerStore.store(peeraddr)
+                        val info = identify(connection)
+                        if (info.observedAddress != null) {
+
+                            val peeraddr = parseAddress(
+                                peerId(),
+                                info.observedAddress
+                            )
+                            if (peeraddr != null) {
+                                return peeraddr.address
+                            }
+                        }
+                    } catch (throwable: Throwable) {
+                        debug(throwable)
+                    } finally {
+                        connection.close()
+                    }
+                } catch (throwable: Throwable) {
+                    debug(throwable)
+                }
+            }
+        }
+        return null
     }
 
     /**

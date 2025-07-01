@@ -26,6 +26,9 @@ import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
 import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
+import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV4
+import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV6
+import io.github.remmerw.asen.createPeeraddr
 import io.github.remmerw.asen.debug
 import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.parseAddress
@@ -456,14 +459,29 @@ internal fun concat(vararg chunks: ByteArray): ByteArray {
     return result
 }
 
-internal suspend fun resolveAddresses() : Set<Peeraddr> {
-    val addresses : MutableSet<Peeraddr> = mutableSetOf()
+internal suspend fun resolveAddresses(): Set<Peeraddr> {
+    val addresses: MutableSet<Peeraddr> = mutableSetOf()
     val dnsResolver = DnsResolver()
-    resolveAddresses(dnsResolver,
-        "bootstrap.libp2p.io", mutableSetOf()).forEach { entry ->
+    resolveAddresses(
+        dnsResolver,
+        "bootstrap.libp2p.io", mutableSetOf()
+    ).forEach { entry ->
         try {
-            println(entry)
-        } catch (throwable: Throwable){
+            val tokens = entry.split('/')
+            val ip = tokens[1]
+            val host = tokens[2]
+            val port = tokens[4].toUShort()
+            val peerId = tokens[7]
+
+            val address = if (ip == "ip4") {
+                textToNumericFormatV4(host)
+            } else {
+                textToNumericFormatV6(host)
+            }!!
+
+            val peeraddr = createPeeraddr(peerId, address, port)
+            addresses.add(peeraddr)
+        } catch (throwable: Throwable) {
             debug(throwable)
         }
     }
@@ -476,21 +494,21 @@ private suspend fun resolveAddresses(
     hosts: MutableSet<String>
 ): Set<String> {
     val result: MutableSet<String> = mutableSetOf()
-    if(!hosts.add(host)){
+    if (!hosts.add(host)) {
         return result
     }
     dnsResolver.resolveDnsAddr(host).forEach { entry ->
-        if(entry.startsWith("/dnsaddr/")){
+        if (entry.startsWith("/dnsaddr/")) {
             var child = entry.replaceFirst("/dnsaddr/", "")
             val index = child.indexOf('/')
-            if(index > 0){
+            if (index > 0) {
                 child = child.substring(0, index)
                 result.addAll(resolveAddresses(dnsResolver, child, hosts))
             } else {
                 result.addAll(resolveAddresses(dnsResolver, child, hosts))
             }
         } else {
-            if(entry.contains("/quic-v1/p2p/")) {
+            if (entry.contains("/quic-v1/p2p/")) {
                 result.add(entry)
             }
         }
