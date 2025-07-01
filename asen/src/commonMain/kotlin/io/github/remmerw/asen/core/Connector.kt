@@ -19,13 +19,13 @@ import io.github.remmerw.asen.quic.Version
 import io.ktor.network.sockets.InetSocketAddress
 
 
-internal suspend fun connect(asen: Asen, address: Peeraddr): Connection {
+internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
 
     val protocols = Protocols()
     protocols.put(MULTISTREAM_PROTOCOL, StreamHandler())
     protocols.put(IDENTITY_PROTOCOL, IdentifyHandler(asen.peerId()))
 
-    return connect(asen.connector(), protocols, asen.certificate(), address, TIMEOUT)
+    return connect(asen.connector(), protocols, asen.certificate(), peeraddr, TIMEOUT)
 }
 
 
@@ -33,16 +33,16 @@ suspend fun connect(
     connector: Connector,
     protocols: Protocols,
     certificate: Certificate,
-    address: Peeraddr,
+    peeraddr: Peeraddr,
     timeout: Int
 ): Connection {
 
-    val remoteAddress = InetSocketAddress(address.address(), address.port.toInt())
+    val remoteAddress = InetSocketAddress(peeraddr.address(), peeraddr.port.toInt())
 
     val responder = Responder(protocols)
 
     val clientConnection = ClientConnection(
-        Version.V1, address, remoteAddress,
+        Version.V1, peeraddr, remoteAddress,
         listOf(CipherSuite.TLS_AES_128_GCM_SHA256), certificate,
         responder, connector
     )
