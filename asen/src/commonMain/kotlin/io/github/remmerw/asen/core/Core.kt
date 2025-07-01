@@ -40,16 +40,11 @@ import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.quic.StreamState
 import io.github.remmerw.asen.sign
 import io.github.remmerw.frey.DnsResolver
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -552,55 +547,36 @@ internal suspend fun doReservations(
     val valid = AtomicInt(handledRelays.size)
 
 
-    try {
-        val scope = CoroutineScope(Dispatchers.IO)
-        val key = createPeerIdKey(asen.peerId())
-        // fill up reservations [not yet enough]
-        withTimeout(timeout * 1000L) {
+    val key = createPeerIdKey(asen.peerId())
+    // fill up reservations [not yet enough]
+    withTimeoutOrNull(timeout * 1000L) {
 
-            val channel: Channel<Connection> = Channel()
+        try {
+            val channel = findClosestPeers(asen, key)
 
-            scope.launch {
-                findClosestPeers(scope, channel, asen, key)
-            }
-
-
-            for (connection in channel) {
+            channel.consumeEach { connection ->
                 // handled relays with given peerId
-                if (!handledRelays.add(connection.remotePeeraddr().peerId)) {
-                    break
-                }
+                if (handledRelays.add(connection.remotePeeraddr().peerId)) {
 
-                if (valid.load() > maxReservation) {
-                    // no more reservations
-                    break  // just return, let the refresh mechanism finished
-                }
-
-                if (!scope.isActive) {
-                    break
-                }
-
-                // add stop handler to connection
-                connection.responder().protocols.put(
-                    RELAY_PROTOCOL_STOP, RelayStopHandler(
-                        asen.peerId(), signatureMessage
+                    // add stop handler to connection
+                    connection.responder().protocols.put(
+                        RELAY_PROTOCOL_STOP, RelayStopHandler(
+                            asen.peerId(), signatureMessage
+                        )
                     )
-                )
 
-                scope.launch {
-                    if (makeReservation(asen, connection)) {
-                        if (valid.incrementAndFetch() > maxReservation) {
-                            // done
-                            scope.cancel()
+                    launch {
+                        if (makeReservation(asen, connection)) {
+                            if (valid.incrementAndFetch() > maxReservation) {
+                                // done
+                                channel.cancel()
+                            }
                         }
                     }
                 }
             }
+        } catch (_: Throwable) {
         }
-    } catch (_: CancellationException) {
-        // ignore
-    } catch (throwable: Throwable) {
-        debug(throwable)
     }
 }
 

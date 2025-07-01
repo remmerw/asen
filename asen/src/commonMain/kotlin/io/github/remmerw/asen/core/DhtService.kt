@@ -8,7 +8,9 @@ import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.TIMEOUT
 import io.github.remmerw.asen.quic.Connection
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -58,27 +60,55 @@ private suspend fun bootstrap(asen: Asen, key: Key): List<DhtPeer> {
 }
 
 
-internal suspend fun findClosestPeers(
-    scope: CoroutineScope,
-    channel: Channel<Connection>,
-    asen: Asen,
-    key: Key
-) {
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun CoroutineScope.findClosestPeers(asen: Asen, key: Key):
+        ReceiveChannel<Connection> = produce {
+
     val message = createFindNodeMessage(key)
     val peers = initialPeers(asen, key)
-    runRequest(scope, channel, asen, key, peers, message)
+
+    val done: MutableSet<Peeraddr> = mutableSetOf()
+    val semaphore = Semaphore(DHT_CONCURRENCY)
+    do {
+        val nextPeer = peers.nextPeer()
+
+        val hasPeer = nextPeer != null
+        if (hasPeer) {
+            if (done.add(nextPeer.peeraddr)) {
+
+                launch {
+                    semaphore.withPermit {
+                        try {
+                            val pms = request(asen, nextPeer, message) { connection ->
+                                send(connection)
+                            }
+
+                            val res = evalClosestPeers(pms, peers, key)
+                            if (res.isNotEmpty()) {
+                                if (nextPeer.replaceable) {
+                                    asen.peerStore().store(nextPeer.peeraddr)
+                                }
+                            }
+                        } catch (_: Throwable) {
+                            // ignore exceptions
+                        }
+                    }
+                }
+            }
+        }
+    } while (isActive)
 }
 
 
 private suspend fun request(
     asen: Asen, dhtPeer: DhtPeer,
-    message: Message, channel: Channel<Connection>
+    message: Message, callback: suspend (Connection) -> Unit
 ): Message {
     val connection = connect(asen, dhtPeer.peeraddr)
     val msg = request(connection, message)
 
     if (dhtPeer.replaceable) {
-        channel.send(connection)
+        callback.invoke(connection)
     }
     return msg
 }
@@ -95,45 +125,6 @@ private suspend fun initialPeers(asen: Asen, key: Key): DhtPeers {
     return dhtPeers
 }
 
-
-private suspend fun runRequest(
-    scope: CoroutineScope,
-    channel: Channel<Connection>,
-    asen: Asen, key: Key,
-    dhtPeers: DhtPeers, message: Message
-) {
-
-    val done: MutableSet<Peeraddr> = mutableSetOf()
-    val semaphore = Semaphore(DHT_CONCURRENCY)
-    do {
-        val nextPeer = dhtPeers.nextPeer()
-
-        val hasPeer = nextPeer != null
-        if (hasPeer) {
-            if (done.add(nextPeer.peeraddr)) {
-
-                scope.launch {
-                    semaphore.withPermit {
-                        try {
-                            val pms = request(asen, nextPeer, message, channel)
-
-                            val res = evalClosestPeers(pms, dhtPeers, key)
-                            if (res.isNotEmpty()) {
-                                if (nextPeer.replaceable) {
-                                    asen.peerStore().store(nextPeer.peeraddr)
-                                }
-                            }
-                        } catch (_: Throwable) {
-                            // ignore exceptions
-                        }
-                    }
-                }
-            }
-        }
-    } while (scope.isActive)
-
-    channel.close() // finish the channel is important here
-}
 
 internal fun createDhtPeer(peeraddr: Peeraddr, replaceable: Boolean, key: Key): DhtPeer {
     val peerKey = createPeerIdKey(peeraddr.peerId)

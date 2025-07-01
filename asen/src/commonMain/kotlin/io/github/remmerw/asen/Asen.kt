@@ -18,17 +18,10 @@ import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Connector
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.io.readUShort
@@ -97,18 +90,13 @@ class Asen internal constructor(
         val signatureMessage = relayMessage(signature, emptyList())
         val key = createPeerIdKey(target)
 
-        try {
-            val scope = CoroutineScope(Dispatchers.IO)
-            val channel: Channel<Connection> = Channel()
-            withTimeout(timeout * 1000L) {
+        withTimeoutOrNull(timeout * 1000L) {
+            val handled: MutableSet<PeerId> = mutableSetOf()
 
-                scope.launch {
-                    findClosestPeers(scope, channel, this@Asen, key)
-                }
+            try {
+                val channel = findClosestPeers(this@Asen, key)
 
-                val handled: MutableSet<PeerId> = mutableSetOf()
-                for (connection in channel) {
-                    ensureActive()
+                channel.consumeEach { connection ->
 
                     try {
                         if (handled.add(connection.remotePeeraddr().peerId)) {
@@ -116,25 +104,21 @@ class Asen internal constructor(
                             val addresses =
                                 connectHop(connection, target, signatureMessage)
 
-                            if(!addresses.isEmpty()) {
+                            if (!addresses.isEmpty()) {
                                 done.store(addresses)
-                                scope.cancel()
+                                channel.cancel()
                             }
                         }
-                    } catch (_: CancellationException) {
-                        // ignore
                     } catch (throwable: Throwable) {
                         debug(throwable)
                     } finally {
                         connection.close()
                     }
                 }
+            } catch (_: Throwable) {
             }
-        } catch (_: CancellationException) {
-            // ignore
-        } catch (throwable: Throwable) {
-            debug(throwable)
         }
+
         return done.load()
     }
 
