@@ -7,14 +7,14 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.time.measureTime
 
-class PublicAddress {
+class ObservedTest {
 
     @Test
-    fun publicAddress(): Unit = runBlocking(Dispatchers.IO) {
+    fun observedAddress(): Unit = runBlocking(Dispatchers.IO) {
 
         val duration = measureTime {
             val server = newAsen()
-            val address = server.publicAddress()
+            val address = server.observedAddress()
             assertNotNull(address)
 
             val peeraddr = Peeraddr(server.peerId(), address, 1234.toUShort())

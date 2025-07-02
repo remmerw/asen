@@ -4,17 +4,17 @@ import io.github.andreypfau.curve25519.ed25519.Ed25519
 import io.github.andreypfau.curve25519.ed25519.Ed25519PrivateKey
 import io.github.andreypfau.curve25519.ed25519.Ed25519PublicKey
 import io.github.remmerw.asen.core.Base58
+import io.github.remmerw.asen.core.closestPeers
 import io.github.remmerw.asen.core.connect
 import io.github.remmerw.asen.core.connectHop
 import io.github.remmerw.asen.core.createCertificate
 import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.doReservations
-import io.github.remmerw.asen.core.closestPeers
 import io.github.remmerw.asen.core.hopRequest
-import io.github.remmerw.asen.core.publicAddress
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.prefixToString
+import io.github.remmerw.asen.core.observedAddress
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
@@ -61,8 +61,8 @@ class Asen internal constructor(
      * This function tries to evaluate its own IP address
      * (public IPv6 addresses are in favour of IPv4)
      */
-    suspend fun publicAddress(): ByteArray? {
-        return publicAddress(this)
+    suspend fun observedAddress(): ByteArray? {
+        return observedAddress(this)
     }
 
     /**
@@ -107,7 +107,8 @@ class Asen internal constructor(
                     done.store(addresses)
                     coroutineContext.cancelChildren()
                 }
-            } catch (_:Throwable){}
+            } catch (_: Throwable) {
+            }
         }
         return done.load()
     }
@@ -251,7 +252,8 @@ fun bootstrap(): List<Peeraddr> {
 }
 
 
-data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) : Comparable<Peeraddr> {
+data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) :
+    Comparable<Peeraddr> {
     init {
         require(address.size == 4 || address.size == 16) { "Invalid size for address" }
         require(port > 0.toUShort() && port <= 65535.toUShort()) {
@@ -302,7 +304,7 @@ data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort
 
     override fun compareTo(other: Peeraddr): Int {
         val cmp = address.size.compareTo(other.address.size)
-        return if(cmp != 0){
+        return if (cmp != 0) {
             -cmp // ipv6 is higher priority
         } else {
             hashCode().compareTo(other.hashCode()) // good enough not perfect

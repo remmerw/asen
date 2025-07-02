@@ -121,7 +121,7 @@ internal fun reachablePeeraddr(peerIdRaw: ByteArray, addresses: List<ByteArray>)
 }
 
 
-private fun concat(vararg arrays: IntArray): IntArray {
+fun concat(vararg arrays: IntArray): IntArray {
     var length = 0
     for (array in arrays) {
         length += array.size
@@ -506,7 +506,7 @@ internal suspend fun resolveAddresses(): Set<Peeraddr> {
 
 
 @OptIn(ExperimentalAtomicApi::class)
-suspend fun publicAddress(asen: Asen): ByteArray? {
+suspend fun observedAddress(asen: Asen): ByteArray? {
 
     val address: AtomicReference<ByteArray?> = AtomicReference(null)
     val addresses = resolveAddresses() // this you can trust

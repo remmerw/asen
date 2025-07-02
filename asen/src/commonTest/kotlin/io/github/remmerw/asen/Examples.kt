@@ -23,7 +23,7 @@ class Examples {
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                bob.publicAddress()!!,
+                bob.observedAddress()!!,
                 5001.toUShort()
             )
         )
@@ -65,7 +65,7 @@ class Examples {
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                bob.publicAddress()!!,
+                bob.observedAddress()!!,
                 5001.toUShort()
             )
         )
