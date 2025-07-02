@@ -89,7 +89,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             ...
-            implementation("io.github.remmerw:asen:0.3.1")
+            implementation("io.github.remmerw:asen:0.3.2")
         }
         ...
     }
@@ -225,7 +225,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 ## Example
 
 ```
-    @Test
+     @Test
     fun testConnection(): Unit = runBlocking(Dispatchers.IO) {
 
         val bob = newAsen()
@@ -234,7 +234,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
         val publicAddresses = listOf(
-            
+
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
@@ -252,8 +252,8 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 
         assertTrue(bob.hasReservations())
 
-        // [2] alice can find bob via its peerId
-        val peeraddrs = alice.findPeer(bob.peerId(), 120)  // timeout max 2 min (120 s)
+        // [2] alice can find bob addresses via its peerId
+        val peeraddrs = alice.resolveAddresses(bob.peerId(), 120)  // timeout max 2 min (120 s)
 
 
         // testing
