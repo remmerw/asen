@@ -238,7 +238,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                bob.publicAddress()!!,
+                bob.observedAddress()!!,
                 5001.toUShort()
             )
         )
