@@ -225,8 +225,8 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 ## Example
 
 ```
-     @Test
-    fun testConnection(): Unit = runBlocking(Dispatchers.IO) {
+    @Test
+    fun resolveAddresses(): Unit = runBlocking(Dispatchers.IO) {
 
         val bob = newAsen()
         val alice = newAsen()
