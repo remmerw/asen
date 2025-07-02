@@ -217,8 +217,8 @@ internal fun verifySignature(
             certificate.publicKey.encodeToDer()
         )
 
-    val verifier2 = serverPublicKey.signatureVerifier(SHA256, ECDSA.SignatureFormat.DER)
-    return verifier2.tryVerifySignatureBlocking(
+    val verifier = serverPublicKey.signatureVerifier(SHA256, ECDSA.SignatureFormat.DER)
+    return verifier.tryVerifySignatureBlocking(
         certificate.tbsCertificate.encodeToDer(),
         certificate.signature.encodeToDer()
     )
