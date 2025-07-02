@@ -44,7 +44,7 @@ kotlin {
                 implementation(libs.hmac.sha2) // TODO replace in the future
                 implementation(libs.ktor.network)
                 implementation(libs.cryptography.core)
-                implementation(libs.indispensable) // TODO replace in the future
+                implementation(libs.indispensable) // TODO replace in the future [Blocker to big]
                 implementation(libs.cryptography.bigint)
                 implementation(libs.curve25519) // TODO replace in the future
 
