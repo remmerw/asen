@@ -79,11 +79,14 @@ internal fun CoroutineScope.findClosestPeers(asen: Asen, key: Key):
                 launch {
                     semaphore.withPermit {
                         try {
-                            val pms = request(asen, nextPeer, message) { connection ->
+                            val connection = connect(asen, nextPeer.peeraddr)
+                            val msg = request(connection, message)
+
+                            if (nextPeer.replaceable) {
                                 send(connection)
                             }
 
-                            val res = evalClosestPeers(pms, peers, key)
+                            val res = evalClosestPeers(msg, peers, key)
                             if (res.isNotEmpty()) {
                                 if (nextPeer.replaceable) {
                                     asen.peerStore().store(nextPeer.peeraddr)
@@ -98,21 +101,6 @@ internal fun CoroutineScope.findClosestPeers(asen: Asen, key: Key):
         }
     } while (isActive)
 }
-
-
-private suspend fun request(
-    asen: Asen, dhtPeer: DhtPeer,
-    message: Message, callback: suspend (Connection) -> Unit
-): Message {
-    val connection = connect(asen, dhtPeer.peeraddr)
-    val msg = request(connection, message)
-
-    if (dhtPeer.replaceable) {
-        callback.invoke(connection)
-    }
-    return msg
-}
-
 
 private suspend fun initialPeers(asen: Asen, key: Key): DhtPeers {
 
