@@ -16,6 +16,7 @@ import io.github.remmerw.asen.quic.Requester
 import io.github.remmerw.asen.quic.Responder
 import io.github.remmerw.asen.quic.Stream
 import io.github.remmerw.asen.quic.Version
+import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 
 
@@ -25,11 +26,16 @@ internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
     protocols.put(MULTISTREAM_PROTOCOL, StreamHandler())
     protocols.put(IDENTITY_PROTOCOL, IdentifyHandler(asen.peerId()))
 
-    return connect(asen.connector(), protocols, asen.certificate(), peeraddr, TIMEOUT)
+    return connect(
+        asen.selectorManager(),
+        asen.connector(),
+        protocols, asen.certificate(), peeraddr, TIMEOUT
+    )
 }
 
 
 suspend fun connect(
+    selectorManager: SelectorManager,
     connector: Connector,
     protocols: Protocols,
     certificate: Certificate,
@@ -42,7 +48,7 @@ suspend fun connect(
     val responder = Responder(protocols)
 
     val clientConnection = ClientConnection(
-        Version.V1, peeraddr, remoteAddress,
+        Version.V1, selectorManager, peeraddr, remoteAddress,
         listOf(CipherSuite.TLS_AES_128_GCM_SHA256), certificate,
         responder, connector
     )

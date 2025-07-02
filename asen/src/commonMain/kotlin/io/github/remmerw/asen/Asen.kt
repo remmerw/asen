@@ -18,6 +18,9 @@ import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Connector
+import io.ktor.network.selector.SelectorManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -48,6 +51,7 @@ class Asen internal constructor(
     private val bootstrap: List<Peeraddr>,
     private val peerStore: PeerStore
 ) {
+    private val selectorManager = SelectorManager(Dispatchers.IO)
     private val connector: Connector = Connector()
     private val mutex = Mutex()
 
@@ -56,15 +60,14 @@ class Asen internal constructor(
     }
 
     /**
-     * Find the peer addresses of given target peer ID via the relay.
+     * Resolve the peer addresses with given target peer ID and a relay address.
      *
-     * @param relay address of the relay which should be used to the relay connection
+     * @param relay address of the relay which should be used to a relayed connection
      * @param target the target peer ID which addresses should be retrieved
 
      * @return list of the peer addresses (usually one IPv6 address)
      */
-    @Suppress("unused")
-    suspend fun findPeer(relay: Peeraddr, target: PeerId): List<Peeraddr> {
+    suspend fun resolveAddresses(relay: Peeraddr, target: PeerId): List<Peeraddr> {
         var connection: Connection? = null
         val signature = newSignature(keys, emptyList())
         val signatureMessage = relayMessage(signature, emptyList())
@@ -77,14 +80,14 @@ class Asen internal constructor(
     }
 
     /**
-     * Find the peer addresses of given target peer ID via the **libp2p** relay mechanism.
+     * Resolve the peer addresses of given target peer ID via the **libp2p** relay mechanism.
      *
      * @param target the target peer ID which addresses should be retrieved
      * @param timeout in seconds
      * @return list of the peer addresses (usually one IPv6 address)
      */
     @OptIn(ExperimentalAtomicApi::class)
-    suspend fun findPeer(target: PeerId, timeout: Long): List<Peeraddr> {
+    suspend fun resolveAddresses(target: PeerId, timeout: Long): List<Peeraddr> {
         val done = AtomicReference(emptyList<Peeraddr>())
         val signature = newSignature(keys, emptyList())
         val signatureMessage = relayMessage(signature, emptyList())
@@ -151,7 +154,7 @@ class Asen internal constructor(
      *
      * @return list of relay peer addresses
      */
-    suspend fun reservations(): List<Peeraddr> {
+    fun reservations(): List<Peeraddr> {
         val peeraddrs = mutableListOf<Peeraddr>()
         for (connection in connector().connections()) {
             if (connection.isMarked()) {
@@ -161,11 +164,11 @@ class Asen internal constructor(
         return peeraddrs
     }
 
-    suspend fun hasReservations(): Boolean {
+    fun hasReservations(): Boolean {
         return !reservations().isEmpty()
     }
 
-    suspend fun numReservations(): Int {
+    fun numReservations(): Int {
         return reservations().size
     }
 
@@ -174,7 +177,16 @@ class Asen internal constructor(
     }
 
     suspend fun shutdown() {
-        connector.shutdown()
+        try {
+            selectorManager.close()
+        } catch (throwable: Throwable) {
+            debug(throwable)
+        }
+        try {
+            connector.shutdown()
+        } catch (throwable: Throwable) {
+            debug(throwable)
+        }
     }
 
     fun peerStore(): PeerStore {
@@ -185,8 +197,12 @@ class Asen internal constructor(
         return bootstrap
     }
 
-    fun connector(): Connector {
+    internal fun connector(): Connector {
         return connector
+    }
+
+    internal fun selectorManager(): SelectorManager {
+        return selectorManager
     }
 
     internal fun certificate(): Certificate {
@@ -374,7 +390,6 @@ fun identifyPeerId(peerId: PeerId): ByteArray {
     return concat(Ed25519_PREFIX, peerId.hash)
 }
 
-@Suppress("unused")
 fun identifyRaw(raw: ByteArray): PeerId {
     if (prefixArraysEquals(Ed25519_PREFIX, raw)) {
         return PeerId(raw.copyOfRange(Ed25519_PREFIX.size, raw.size))

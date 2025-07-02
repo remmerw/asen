@@ -2,10 +2,16 @@ package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.debug
+import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.isClosed
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -17,6 +23,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class ClientConnection internal constructor(
     version: Int,
+    private val selectorManager: SelectorManager,
     private val remotePeeraddr: Peeraddr,
     remoteAddress: InetSocketAddress,
     cipherSuites: List<CipherSuite>,
@@ -24,6 +31,7 @@ class ClientConnection internal constructor(
     responder: Responder,
     private val connector: Connector
 ) : Connection(version, remoteAddress, responder) {
+    private val scope = CoroutineScope(Dispatchers.IO)
     private val tlsEngine: TlsClientEngine
     private val handshakeDone = Semaphore(1, 1)
     private val transportParams: TransportParameters
@@ -105,6 +113,12 @@ class ClientConnection internal constructor(
         }
     }
 
+    override fun scheduleTerminate(pto: Int) {
+        scope.launch {
+            delay(pto.toLong())
+            terminate()
+        }
+    }
 
     private suspend fun startHandshake() {
         computeInitialKeys(dcidRegistry.initial)
@@ -113,10 +127,10 @@ class ClientConnection internal constructor(
             InetSocketAddress("::", 0)
         )
 
-        selectorManager.launch {
+        scope.launch {
             runReceiver()
         }
-        selectorManager.launch {
+        scope.launch {
             runRequester()
         }
 
@@ -338,11 +352,7 @@ class ClientConnection internal constructor(
         } catch (_: Throwable) {
         }
 
-        try {
-            selectorManager.close()
-        } catch (throwable: Throwable) {
-            debug(throwable)
-        }
+
 
         try {
             socket?.isClosed?.let {
@@ -350,6 +360,12 @@ class ClientConnection internal constructor(
                     socket!!.close()
                 }
             }
+        } catch (throwable: Throwable) {
+            debug(throwable)
+        }
+
+        try {
+            scope.cancel()
         } catch (throwable: Throwable) {
             debug(throwable)
         }

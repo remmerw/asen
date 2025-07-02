@@ -2,17 +2,12 @@ package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.debug
-import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.BoundDatagramSocket
 import io.ktor.network.sockets.Datagram
 import io.ktor.network.sockets.InetSocketAddress
 import io.ktor.network.sockets.isClosed
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -29,7 +24,6 @@ abstract class Connection(
     private val remoteAddress: InetSocketAddress,
     private val responder: Responder
 ) : ConnectionStreams(version) {
-    protected val selectorManager = SelectorManager(Dispatchers.IO)
     protected var socket: BoundDatagramSocket? = null
 
     @OptIn(ExperimentalAtomicApi::class)
@@ -529,12 +523,7 @@ abstract class Connection(
         }
     }
 
-    private fun scheduleTerminate(pto: Int) {
-        selectorManager.launch {
-            delay(pto.toLong())
-            terminate()
-        }
-    }
+    abstract fun scheduleTerminate(pto: Int)
 
     private suspend fun handlePacketInClosingState(level: Level) {
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2.2
@@ -693,7 +682,7 @@ abstract class Connection(
             // Determine whether this loop must be ended _before_ composing packets, to avoid
             // race conditions with
             // items being queued just after the packet assembler (for that level) has executed.
-            while (selectorManager.isActive) {
+            while (true) {
                 lossDetection()
                 sendIfAny()
 

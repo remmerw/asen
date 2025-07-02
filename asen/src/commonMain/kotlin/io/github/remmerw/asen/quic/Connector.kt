@@ -1,36 +1,29 @@
 package io.github.remmerw.asen.quic
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import io.ktor.util.collections.ConcurrentSet
 
 
 class Connector() {
-    private val connections: MutableSet<ClientConnection> = mutableSetOf()
-    private val mutex = Mutex()
+    private val connections: MutableSet<ClientConnection> = ConcurrentSet()
 
-    suspend fun connections(): Set<ClientConnection> {
-        return mutex.withLock {
-            connections.toSet()
-        }
+
+    fun connections(): Set<ClientConnection> {
+        return connections.toSet()
     }
 
     suspend fun shutdown() {
-        mutex.withLock {
-            connections.forEach { connection: ClientConnection -> connection.close() }
-            connections.clear()
-        }
+        connections.forEach { connection: ClientConnection -> connection.close() }
+        connections.clear()
+
     }
 
-    suspend fun addConnection(connection: ClientConnection) {
+    fun addConnection(connection: ClientConnection) {
         require(connection.isConnected) { "Connection not connected" }
-        mutex.withLock {
-            connections.add(connection)
-        }
+        connections.add(connection)
+
     }
 
-    suspend fun removeConnection(connection: ClientConnection) {
-        mutex.withLock {
-            connections.remove(connection)
-        }
+    fun removeConnection(connection: ClientConnection) {
+        connections.remove(connection)
     }
 }

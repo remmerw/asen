@@ -38,7 +38,7 @@ class Examples {
         assertTrue(bob.hasReservations())
 
         // [2] alice can find bob via its peerId
-        val peeraddrs = alice.findPeer(bob.peerId(), 120)  // timeout max 2 min (120 s)
+        val peeraddrs = alice.resolveAddresses(bob.peerId(), 120)  // timeout max 2 min (120 s)
 
 
         // testing
