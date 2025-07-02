@@ -71,6 +71,11 @@ class UtilsTest {
         val peerId = TestEnv.randomPeerId()
         val bytes = peerId.hash
         assertEquals(PeerId(bytes), peerId)
+
+
+        val data = identifyPeerId(peerId)
+        val cmp = identifyRaw(data)
+        assertEquals(peerId, cmp)
     }
 
     @Test

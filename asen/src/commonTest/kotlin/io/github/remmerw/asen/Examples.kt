@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 class Examples {
 
     @Test
-    fun testConnection(): Unit = runBlocking(Dispatchers.IO) {
+    fun resolveAddresses(): Unit = runBlocking(Dispatchers.IO) {
 
         val bob = newAsen()
         val alice = newAsen()
@@ -51,4 +51,55 @@ class Examples {
         bob.shutdown()
         alice.shutdown()
     }
+
+
+    @Test
+    fun resolveDirectAddresses(): Unit = runBlocking(Dispatchers.IO) {
+
+        val bob = newAsen()
+
+        // Use Case : alice wants to connect to bob
+        // [1] bob has to make reservations to relays
+        val publicAddresses = listOf(
+
+            // artificial address where the "data" server of bob is running
+            Peeraddr(
+                bob.peerId(),
+                bob.publicAddress()!!,
+                5001.toUShort()
+            )
+        )
+
+        // Note: bob has a service running on port 5001
+        bob.makeReservations(
+            publicAddresses,
+            20,
+            120
+        )  // timeout max 2 min (120 s) or 20 relays
+
+        assertTrue(bob.hasReservations())
+
+
+        bob.reservations().forEach { relay ->
+            val alice = newAsen()
+            val addresses = alice.resolveAddresses(relay, bob.peerId())
+
+            // testing
+            assertNotNull(addresses) // peeraddrs are the public IP addresses
+
+            if (addresses.isNotEmpty()) {
+                val address = addresses.first()
+                assertEquals(address.peerId, bob.peerId())
+            } else {
+                println("Shitty relay " + relay.address())
+            }
+
+            alice.shutdown()
+        }
+
+        bob.shutdown()
+
+    }
+
+
 }

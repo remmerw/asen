@@ -1,44 +1,40 @@
 package io.github.remmerw.asen.core
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import io.ktor.util.collections.ConcurrentSet
 
 internal class DhtPeers(val saturation: Int) {
-    private val peerSet: MutableSet<DhtPeer> = mutableSetOf()
-    private val mutex = Mutex()
+    private val peerSet: MutableSet<DhtPeer> = ConcurrentSet()
 
 
-    internal suspend fun nextPeer(): DhtPeer? {
-        return mutex.withLock {
-            val value = peerSet.minOrNull()
-            if (value != null) {
-                peerSet.remove(value)
-            }
-            value
+    internal fun nextPeer(): DhtPeer? {
+
+        val value = first()
+        if (value != null) {
+            peerSet.remove(value)
         }
+        return value
     }
 
-    internal suspend fun add(dhtPeer: DhtPeer): Boolean {
-        return mutex.withLock {
-            if (peerSet.add(dhtPeer)) {
-                if (peerSet.size >= saturation) {
-                    val last = peerSet.maxOf { it }
-                    peerSet.remove(last)
-                    last !== dhtPeer // pointer comparison
-                } else {
-                    true
-                }
+    internal fun add(dhtPeer: DhtPeer): Boolean {
+        if (peerSet.add(dhtPeer)) {
+            if (peerSet.size >= saturation) {
+                val last = last()
+                peerSet.remove(last)
+                return last !== dhtPeer // pointer comparison
             } else {
-                false
+                return true
             }
+        } else {
+            return false
         }
+
     }
 
-    internal fun first(): DhtPeer {
-        return peerSet.minOf { it }
+    internal fun first(): DhtPeer? {
+        return peerSet.minOrNull()
     }
 
-    internal fun last(): DhtPeer {
-        return peerSet.maxOf { it }
+    internal fun last(): DhtPeer? {
+        return peerSet.maxOrNull()
     }
 }
