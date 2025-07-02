@@ -12,7 +12,7 @@ import kotlinx.serialization.protobuf.ProtoBuf
 
 internal data class RelayStopHandler(
     private val self: PeerId,
-    private val relayMessage: RelayMessage
+    private val signatureMessage: SignatureMessage
 ) :
     Handler {
     override suspend fun protocol(stream: Stream) {
@@ -30,7 +30,7 @@ internal data class RelayStopHandler(
 
             stream.writeOutput(
                 true,
-                encodeMessage(relayMessage)
+                encodeMessage(signatureMessage)
             )
 
         } else {

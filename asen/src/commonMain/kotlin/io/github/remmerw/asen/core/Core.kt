@@ -40,8 +40,13 @@ import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.quic.StreamState
 import io.github.remmerw.asen.sign
 import io.github.remmerw.frey.DnsResolver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -527,6 +532,35 @@ suspend fun publicAddress(asen: Asen): ByteArray? {
     return address.load()
 }
 
+
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun CoroutineScope.makeReservation(
+    asen: Asen,
+    handledRelays: MutableSet<PeerId>,
+    signatureMessage: SignatureMessage,
+    channel: ReceiveChannel<Connection>
+):
+        ReceiveChannel<Connection> = produce {
+    channel.consumeEach { connection ->
+        // handled relays with given peerId
+        if (handledRelays.add(connection.remotePeeraddr().peerId)) {
+
+            // add stop handler to connection
+            connection.responder().protocols.put(
+                RELAY_PROTOCOL_STOP, RelayStopHandler(
+                    asen.peerId(), signatureMessage
+                )
+            )
+
+            launch {
+                if (makeReservation(asen, connection)) {
+                    send(connection)
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalAtomicApi::class)
 internal suspend fun doReservations(
     asen: Asen,
@@ -553,27 +587,13 @@ internal suspend fun doReservations(
     withTimeoutOrNull(timeout * 1000L) {
 
         try {
-            val channel = findClosestPeers(asen, key)
+            val channel = closestPeers(asen, key)
+            val result = makeReservation(asen, handledRelays, signatureMessage, channel)
 
-            channel.consumeEach { connection ->
-                // handled relays with given peerId
-                if (handledRelays.add(connection.remotePeeraddr().peerId)) {
-
-                    // add stop handler to connection
-                    connection.responder().protocols.put(
-                        RELAY_PROTOCOL_STOP, RelayStopHandler(
-                            asen.peerId(), signatureMessage
-                        )
-                    )
-
-                    launch {
-                        if (makeReservation(asen, connection)) {
-                            if (valid.incrementAndFetch() > maxReservation) {
-                                // done
-                                channel.cancel()
-                            }
-                        }
-                    }
+            result.consumeEach { connection ->
+                if (valid.incrementAndFetch() > maxReservation) {
+                    // done
+                    coroutineContext.cancelChildren()
                 }
             }
         } catch (_: Throwable) {

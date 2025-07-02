@@ -4,12 +4,15 @@ package io.github.remmerw.asen.core
 import io.github.remmerw.asen.Asen
 import io.github.remmerw.asen.DHT_ALPHA
 import io.github.remmerw.asen.DHT_CONCURRENCY
+import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.TIMEOUT
+import io.github.remmerw.asen.debug
 import io.github.remmerw.asen.quic.Connection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -61,7 +64,34 @@ private suspend fun bootstrap(asen: Asen, key: Key): List<DhtPeer> {
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal fun CoroutineScope.findClosestPeers(asen: Asen, key: Key):
+internal fun CoroutineScope.hopRequest(
+    target: PeerId,
+    signatureMessage: SignatureMessage,
+    channel: ReceiveChannel<Connection>
+):
+        ReceiveChannel<List<Peeraddr>> = produce {
+    channel.consumeEach { connection ->
+        val handled: MutableSet<PeerId> = mutableSetOf()
+
+        try {
+            if (handled.add(connection.remotePeeraddr().peerId)) {
+
+                val addresses =
+                    connectHop(connection, target, signatureMessage)
+                if (!addresses.isEmpty()) {
+                    send(addresses)
+                }
+            }
+        } catch (throwable: Throwable) {
+            debug(throwable)
+        } finally {
+            connection.close()
+        }
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun CoroutineScope.closestPeers(asen: Asen, key: Key):
         ReceiveChannel<Connection> = produce {
 
     val message = createFindNodeMessage(key)

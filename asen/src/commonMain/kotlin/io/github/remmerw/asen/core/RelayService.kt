@@ -19,11 +19,11 @@ import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 
 @Suppress("ArrayInDataClass")
-internal data class RelayMessage(val bytes: ByteArray)
+internal data class SignatureMessage(val bytes: ByteArray)
 
 internal data class ConnectRequest(
     val target: PeerId,
-    val relayMessage: RelayMessage,
+    val signatureMessage: SignatureMessage,
     val done: Semaphore,
 ) : Requester {
     private val result = mutableListOf<Peeraddr>()
@@ -75,7 +75,7 @@ internal data class ConnectRequest(
         stream.writeOutput(
             true,
             encodeMessage(
-                relayMessage
+                signatureMessage
             )
         )
     }
@@ -86,7 +86,7 @@ internal data class ConnectRequest(
 internal suspend fun connectHop(
     connection: Connection,
     target: PeerId,
-    relayMessage: RelayMessage
+    signatureMessage: SignatureMessage
 ): List<Peeraddr> {
 
     val done = Semaphore(1, 1)
@@ -98,7 +98,7 @@ internal suspend fun connectHop(
 
     val message = ProtoBuf.encodeToByteArray<HopMessage>(hopMessage)
 
-    val request = ConnectRequest(target, relayMessage, done)
+    val request = ConnectRequest(target, signatureMessage, done)
     createStream(
         connection, request
     ).writeOutput(
@@ -157,7 +157,7 @@ internal suspend fun reserveHop(connection: Connection, self: PeerId) {
 }
 
 
-internal fun relayMessage(signature: ByteArray, peeraddrs: List<Peeraddr>): RelayMessage {
+internal fun relayMessage(signature: ByteArray, peeraddrs: List<Peeraddr>): SignatureMessage {
     require(peeraddrs.size <= Byte.MAX_VALUE) { "to many peeraddrs" }
 
     var size = Byte.SIZE_BYTES
@@ -195,12 +195,12 @@ internal fun relayMessage(signature: ByteArray, peeraddrs: List<Peeraddr>): Rela
 
     require(buffer.size == (dataLength.toLong() + size)) { "Still data to write" }
 
-    return RelayMessage(buffer.readByteArray())
+    return SignatureMessage(buffer.readByteArray())
 }
 
-internal fun encodeMessage(relayMessage: RelayMessage): Buffer {
+internal fun encodeMessage(signatureMessage: SignatureMessage): Buffer {
     val buffer = Buffer()
-    buffer.write(relayMessage.bytes)
+    buffer.write(signatureMessage.bytes)
     return buffer
 }
 

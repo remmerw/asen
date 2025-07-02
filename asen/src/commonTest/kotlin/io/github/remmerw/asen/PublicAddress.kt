@@ -20,7 +20,7 @@ class PublicAddress {
             val peeraddr = Peeraddr(server.peerId(), address, 1234.toUShort())
             assertNotNull(peeraddr)
 
-            if(peeraddr.inet4()){
+            if (peeraddr.inet4()) {
                 println("Warning onl IPv4 address")
             }
             server.shutdown()

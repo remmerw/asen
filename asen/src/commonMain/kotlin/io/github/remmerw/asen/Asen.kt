@@ -10,7 +10,8 @@ import io.github.remmerw.asen.core.createCertificate
 import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.doReservations
-import io.github.remmerw.asen.core.findClosestPeers
+import io.github.remmerw.asen.core.closestPeers
+import io.github.remmerw.asen.core.hopRequest
 import io.github.remmerw.asen.core.publicAddress
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.prefixToString
@@ -21,6 +22,7 @@ import io.github.remmerw.asen.quic.Connector
 import io.ktor.network.selector.SelectorManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -98,34 +100,15 @@ class Asen internal constructor(
         val key = createPeerIdKey(target)
 
         withTimeoutOrNull(timeout * 1000L) {
-            val handled: MutableSet<PeerId> = mutableSetOf()
-
             try {
-                val channel = findClosestPeers(this@Asen, key)
-
-                channel.consumeEach { connection ->
-
-                    try {
-                        if (handled.add(connection.remotePeeraddr().peerId)) {
-
-                            val addresses =
-                                connectHop(connection, target, signatureMessage)
-
-                            if (!addresses.isEmpty()) {
-                                done.store(addresses)
-                                channel.cancel()
-                            }
-                        }
-                    } catch (throwable: Throwable) {
-                        debug(throwable)
-                    } finally {
-                        connection.close()
-                    }
+                val channel = closestPeers(this@Asen, key)
+                val result = hopRequest(target, signatureMessage, channel)
+                result.consumeEach { addresses ->
+                    done.store(addresses)
+                    coroutineContext.cancelChildren()
                 }
-            } catch (_: Throwable) {
-            }
+            } catch (_:Throwable){}
         }
-
         return done.load()
     }
 
