@@ -113,10 +113,12 @@ class Asen internal constructor(
     }
 
     /**
-     * Makes a reservation o relay nodes with the purpose that other peers can fin you via
-     * the nodes peerId
+     * Makes a reservation to relay nodes with the purpose that other peers can find you via
+     * the its peerId
      *
-     * @param peeraddrs the peeraddrs which should be announced to incoming connecting peers via relays
+     * Note: when a reservation is just happening no further reservation is possible (mutex - protection)
+     *
+     * @param peeraddrs the peeraddrs which should be announced to connecting peers via relays
      * @param maxReservation number of max reservations
      * @param timeout in seconds
      */
