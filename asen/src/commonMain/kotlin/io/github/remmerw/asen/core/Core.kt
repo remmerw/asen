@@ -501,7 +501,7 @@ internal suspend fun resolveAddresses(): Set<Peeraddr> {
 
 
 @OptIn(ExperimentalAtomicApi::class)
-suspend fun ipv6Address(asen: Asen): ByteArray? {
+suspend fun publicAddress(asen: Asen): ByteArray? {
 
     val address: AtomicReference<ByteArray?> = AtomicReference(null)
     val addresses = resolveAddresses() // this you can trust
@@ -509,18 +509,19 @@ suspend fun ipv6Address(asen: Asen): ByteArray? {
     try {
         coroutineScope {
             val scope = this
-            addresses.forEach { peeraddr ->
-                if (peeraddr.inet6()) {
-                    scope.launch {
-                        val observed = observedAddress(asen, peeraddr)
-                        if (observed != null) {
-                            address.store(observed)
-                            scope.cancel()
-                        }
+
+            // first ipv6 then ipv4 (after the sorting)
+            addresses.sorted().forEach { peeraddr ->
+                scope.launch {
+                    val observed = observedAddress(asen, peeraddr)
+                    if (observed != null) {
+                        address.store(observed)
+                        scope.cancel()
                     }
                 }
             }
         }
+        // then IPv4
     } catch (_: Throwable) {
     }
     return address.load()

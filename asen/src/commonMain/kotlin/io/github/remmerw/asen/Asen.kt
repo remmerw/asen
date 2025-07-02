@@ -11,7 +11,7 @@ import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.doReservations
 import io.github.remmerw.asen.core.findClosestPeers
-import io.github.remmerw.asen.core.ipv6Address
+import io.github.remmerw.asen.core.publicAddress
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
@@ -55,8 +55,12 @@ class Asen internal constructor(
     private val connector: Connector = Connector()
     private val mutex = Mutex()
 
+    /**
+     * This function tries to evaluate its own IP address
+     * (public IPv6 addresses are in favour of IPv4)
+     */
     suspend fun publicAddress(): ByteArray? {
-        return ipv6Address(this)
+        return publicAddress(this)
     }
 
     /**
@@ -262,13 +266,14 @@ fun bootstrap(): List<Peeraddr> {
 }
 
 
-data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) {
+data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) : Comparable<Peeraddr> {
     init {
         require(address.size == 4 || address.size == 16) { "Invalid size for address" }
         require(port > 0.toUShort() && port <= 65535.toUShort()) {
             "Invalid port: $port"
         }
     }
+
 
     fun address(): String {
         return io.github.remmerw.asen.core.address(address)
@@ -308,6 +313,15 @@ data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort
         if (port != other.port) return false
 
         return true
+    }
+
+    override fun compareTo(other: Peeraddr): Int {
+        val cmp = address.size.compareTo(other.address.size)
+        return if(cmp != 0){
+            -cmp // ipv6 is higher priority
+        } else {
+            hashCode().compareTo(other.hashCode()) // good enough not perfect
+        }
     }
 }
 
