@@ -1,31 +1,12 @@
 package io.github.remmerw.asen.core
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.Asn1OctetString
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Asn1Time
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetString
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
-import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
-import at.asitplus.signum.indispensable.pki.TbsCertificate
-import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import dev.whyoleg.cryptography.CryptographyProvider
-import dev.whyoleg.cryptography.algorithms.EC
-import dev.whyoleg.cryptography.algorithms.ECDSA
 import dev.whyoleg.cryptography.algorithms.SHA256
 import dev.whyoleg.cryptography.bigint.BigInt
 import dev.whyoleg.cryptography.bigint.decodeToBigInt
-import dev.whyoleg.cryptography.bigint.encodeToByteArray
-import dev.whyoleg.cryptography.bigint.toBigInt
 import io.github.remmerw.asen.Address
 import io.github.remmerw.asen.Asen
 import io.github.remmerw.asen.Keys
-import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
 import io.github.remmerw.asen.MIXED_MODE
 import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
@@ -33,12 +14,10 @@ import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV4
 import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV6
 import io.github.remmerw.asen.createPeeraddr
 import io.github.remmerw.asen.debug
-import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.parseAddress
 import io.github.remmerw.asen.parsePeerId
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
-import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.quic.StreamState
 import io.github.remmerw.asen.sign
 import io.github.remmerw.frey.DnsResolver
@@ -52,12 +31,6 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlin.concurrent.atomics.AtomicInt
@@ -288,176 +261,9 @@ internal fun encode(message: ByteArray, vararg protocols: String): Buffer {
     return buffer
 }
 
-
-// The libp2p handshake uses TLS 1.3 (and higher). Endpoints MUST NOT negotiate lower TLS versions.
-//
-// During the handshake, peers authenticate each other’s identity as described in Peer
-// Authentication. Endpoints MUST verify the peer's identity. Specifically,
-// this means that servers MUST require client authentication during the TLS handshake,
-// and MUST abort a connection attempt if the client fails to provide the requested
-// authentication information.
-//
-// When negotiating the usage of this handshake dynamically, via a protocol agreement mechanism
-// like multistream-select 1.0, it MUST be identified with the following protocol ID: /tls/1.0.0
-//
-// [-> done see Connection.remoteCertificate() and the usage]
-//
-// In order to be able to use arbitrary key types, peers don’t use their host key to sign the
-// X.509 certificate they send during the handshake. Instead, the host key is encoded into the
-// libp2p Public Key Extension, which is carried in a self-signed certificate.
-// [-> done see createCertificate]
-//
-// The key used to generate and sign this certificate SHOULD NOT be related to the host's key.
-// Endpoints MAY generate a new key and certificate for every connection attempt, or they MAY
-// reuse the same key and certificate for multiple connections.
-// [-> done see createCertificate, use the certification for multiple connections, but
-// generates a new one each time the application is started]
-//
-// Endpoints MUST choose a key that will allow the peer to verify the certificate (i.e.
-// choose a signature algorithm that the peer supports), and SHOULD use a key payloadType that (a)
-// allows for efficient signature computation, and (b) reduces the combined size of the
-// certificate and the signature. In particular, RSA SHOULD NOT be used unless no elliptic
-// curve algorithms are supported.
-// [-> elliptic curve is used, NAMED_CURVE = "secp256r1"]
-//
-// Endpoints MUST NOT send a certificate chain that contains more than one certificate.
-// The certificate MUST have NotBefore and NotAfter fields set such that the certificate
-// is valid at the time it is received by the peer. When receiving the certificate chain,
-// an endpoint MUST check these conditions and abort the connection attempt if (a) the
-// presented certificate is not yet valid, OR (b) if it is expired. Endpoints MUST abort
-// the connection attempt if more than one certificate is received, or if the certificate’s
-// self-signature is not valid.
-//
-// The certificate MUST contain the libp2p Public Key Extension. If this extension is
-// missing, endpoints MUST abort the connection attempt. This extension MAY be marked
-// critical. The certificate MAY contain other extensions. Implementations MUST ignore
-// non-critical extensions with unknown OIDs. Endpoints MUST abort the connection attempt
-// if the certificate contains critical extensions that the endpoint does not understand.
-//
-// Certificates MUST omit the deprecated subjectUniqueId and issuerUniqueId fields.
-// Endpoints MAY abort the connection attempt if either is present.
-// [Not done, because it is not required, but easy to do]
-//
-// Note for clients: Since clients complete the TLS handshake immediately after sending the
-// certificate (and the TLS ClientFinished message), the handshake will appear as having
-// succeeded before the server had the chance to verify the certificate. In this state,
-// the client can already send application data. If certificate verification fails on
-// the server side, the server will close the connection without processing any data that
-// the client sent.
-// [-> done see Connection.remoteCertificate() and the usage]
 @OptIn(ExperimentalEncodingApi::class)
 internal fun createCertificate(keys: Keys): Certificate {
-
-    val now: Instant = Clock.System.now()
-    val notBefore = now.minus(1, DateTimeUnit.YEAR, TimeZone.UTC)
-    val notAfter = now.plus(99, DateTimeUnit.YEAR, TimeZone.UTC)
-
-    val oid = ObjectIdentifier(LIBP2P_CERTIFICATE_EXTENSION)
-
-
-    // getting ECDSA algorithm
-    val ecdsa = CryptographyProvider.Default.get(ECDSA)
-    // creating key generator with the specified curve
-    val keyPairGenerator = ecdsa.keyPairGenerator(EC.Curve.P256)
-    // generating ECDSA key pair
-    //  types here and below are not required, and just needed to hint reader
-    val keyPair: ECDSA.KeyPair = keyPairGenerator.generateKeyBlocking()
-
-
-    // This signature provides cryptographic proof that the peer was in possession of the
-    // private host key at the time the certificate was signed. Peers MUST verify the
-    // signature, and abort the connection attempt if signature verification fails.
-    //
-    // The public host key and the signature are ANS.1-encoded into the SignedKey data
-    // structure, which is carried in the libp2p Public Key Extension.
-    // The libp2p Public Key Extension is a X.509 extension with the Object
-    // Identier 1.3.6.1.4.1.53594.1.1, allocated by IANA to the libp2p project at Protocol Labs.
-    // The publicKey field of SignedKey contains the public host key of the endpoint
-    val keyBytes = identifyPeerId(keys.peerId)
-
-
-    // The public host key allows the peer to calculate the peer ID of the peer it is
-    // connecting to. Clients MUST verify that the peer ID derived from the certificate
-    // matches the peer ID they intended to connect to, and MUST abort the connection if
-    // there is a mismatch.
-    //
-    // The peer signs the concatenation of the string libp2p-tls-handshake: and the encoded
-    // public key that is used to generate the certificate carrying the libp2p
-    // Public Key Extension, using its private host key. The public key is encoded as a
-    // SubjectPublicKeyInfo structure as described in RFC 5280, Section 4.1:
-
-    // SubjectPublicKeyInfo ::= SEQUENCE {
-    //  algorithm             AlgorithmIdentifier,
-    //  subject_public_key    BIT STRING
-    // }
-    // AlgorithmIdentifier  ::= SEQUENCE {
-    //  algorithm             OBJECT IDENTIFIER,
-    //  parameters            ANY DEFINED BY algorithm OPTIONAL
-    // }
-
-    val signature = sign(
-        keys,
-        concat(
-            TLS_HANDSHAKE.encodeToByteArray(),
-            keyPair.publicKey.encodeToByteArrayBlocking(EC.PublicKey.Format.DER)
-        )
-    )
-
-    val bigInteger = now.toEpochMilliseconds().toBigInt()
-
-    // Prepare the information required for generating an X.509 certificate.
-    val name = "SERIALNUMBER=$bigInteger"
-
-
-    val seq = Asn1.Sequence {
-        +OctetString(keyBytes)
-        +OctetString(signature)
-    }
-
-    val cryptoPublicKey = CryptoPublicKey.decodeFromDer(
-        keyPair.publicKey.encodeToByteArrayBlocking(EC.PublicKey.Format.DER)
-    )
-    val tbsCrt = TbsCertificate(
-        serialNumber = bigInteger.encodeToByteArray(),
-        signatureAlgorithm = X509SignatureAlgorithm.ES256,
-        issuerName = listOf(
-            RelativeDistinguishedName(
-                AttributeTypeAndValue.CommonName(Asn1String.UTF8(name))
-            )
-        ),
-        validFrom = Asn1Time(notBefore),
-        validUntil = Asn1Time(notAfter),
-        subjectName = listOf(
-            RelativeDistinguishedName(
-                AttributeTypeAndValue.CommonName(Asn1String.UTF8(name))
-            )
-        ),
-        publicKey = cryptoPublicKey,
-        extensions = listOf(
-            X509CertificateExtension(
-                oid,
-                critical = false,
-                Asn1OctetString(seq.derEncoded)
-            )
-        )
-    )
-
-    val generator = keyPair.privateKey.signatureGenerator(
-        SHA256,
-        ECDSA.SignatureFormat.DER
-    )
-
-    val signed = generator.generateSignatureBlocking(tbsCrt.encodeToDer())
-
-    val certificate = X509Certificate(
-        tbsCrt, X509SignatureAlgorithm.ES256,
-        CryptoSignature.decodeFromDerOrNull(signed)!!
-    )
-
-    return Certificate(
-        certificate, keyPair.publicKey,
-        keyPair.privateKey, SignatureScheme.ECDSA_SECP256R1_SHA256
-    )
+    return generateCertificate(keys)
 }
 
 

@@ -93,7 +93,7 @@ internal data class CertificateMessage(
         private fun serialize(certificate: Certificate): ByteArray {
             val nrOfCerts = 1
             val encodedCerts: MutableList<ByteArray> = mutableListOf()
-            encodedCerts.add(certificate.x509.encodeToDer())
+            encodedCerts.add(certificate.x509.encoded())
 
 
             val msgSize =

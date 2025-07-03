@@ -17,6 +17,7 @@ import io.github.remmerw.asen.cert.SubjectPublicKeyInfo
 import io.github.remmerw.asen.cert.X500Name
 import io.github.remmerw.asen.cert.X509v3CertificateBuilder
 import io.github.remmerw.asen.identifyPeerId
+import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.sign
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -81,7 +82,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 // the server side, the server will close the connection without processing any data that
 // the client sent.
 @OptIn(ExperimentalEncodingApi::class)
-internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.cert.Certificate {
+internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.quic.Certificate {
 
 
     val now: Instant = Clock.System.now()
@@ -168,9 +169,13 @@ internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.cert.Certif
     // connection attempt if the certificate contains critical extensions that the
     // endpoint does not understand.
 
-    return builder.addExtension(indent, false, signedKey)
+    val cert = builder.addExtension(indent, false, signedKey)
         .build("SHA256withECDSA", key)
 
+    return io.github.remmerw.asen.quic.Certificate(
+        cert, pubKey, key,
+        SignatureScheme.ECDSA_SECP256R1_SHA256
+    )
 
     // return null // todo Certificate(cert.encoded(), key, "SHA256withECDSA")
 }
