@@ -26,6 +26,7 @@ internal data class RelayStopHandler(
 
     @OptIn(ExperimentalSerializationApi::class)
     override suspend fun data(stream: Stream, data: ByteArray) {
+
         if (stream.isMarked()) {
 
             stream.writeOutput(

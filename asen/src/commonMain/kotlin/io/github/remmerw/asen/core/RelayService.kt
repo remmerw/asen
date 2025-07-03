@@ -3,12 +3,18 @@ package io.github.remmerw.asen.core
 import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.TIMEOUT
+import io.github.remmerw.asen.debug
 import io.github.remmerw.asen.multihash
 import io.github.remmerw.asen.parsePeeraddr
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Requester
 import io.github.remmerw.asen.quic.Stream
 import io.github.remmerw.asen.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.Buffer
@@ -63,7 +69,6 @@ internal data class ConnectRequest(
                 stream.close()
                 return
             }
-
             initializeConnect(stream)
             stream.mark()
         }
@@ -204,25 +209,52 @@ internal fun encodeMessage(signatureMessage: SignatureMessage): Buffer {
     return buffer
 }
 
+
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun CoroutineScope.hopRequest(
+    target: PeerId,
+    signatureMessage: SignatureMessage,
+    channel: ReceiveChannel<Connection>
+):
+        ReceiveChannel<List<Peeraddr>> = produce {
+    channel.consumeEach { connection ->
+        val handled: MutableSet<PeerId> = mutableSetOf()
+
+        try {
+            if (handled.add(connection.remotePeeraddr().peerId)) {
+                val addresses =
+                    connectHop(connection, target, signatureMessage)
+                if (!addresses.isEmpty()) {
+                    send(addresses)
+                }
+            }
+        } catch (throwable: Throwable) {
+            debug(throwable)
+        } finally {
+            connection.close()
+        }
+    }
+}
+
 private fun decodeMessage(peerId: PeerId, data: ByteArray): List<Peeraddr> {
     val buffer = Buffer()
     buffer.write(data)
 
-    var toVerify = BYTES_EMPTY
+    val toVerify = Buffer()
     val size = buffer.readByte()
     val peeraddrs = mutableListOf<Peeraddr>()
 
     repeat(size.toInt()) {
         val length = readUnsignedVariant(buffer)
         val raw = buffer.readByteArray(length)
-        toVerify = concat(toVerify, raw)
+        toVerify.write(raw)
         peeraddrs.add(parsePeeraddr(peerId, raw))
     }
 
     val sigSize = readUnsignedVariant(buffer)
     val signature = buffer.readByteArray(sigSize)
 
-    verify(peerId, toVerify, signature)
+    verify(peerId, toVerify.readByteArray(), signature)
 
     require(buffer.exhausted()) { "still data available" }
 
