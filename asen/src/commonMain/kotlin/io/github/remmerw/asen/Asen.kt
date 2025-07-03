@@ -259,7 +259,11 @@ fun bootstrap(): List<Peeraddr> {
 data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) :
     Comparable<Peeraddr> {
     init {
-        require(address.size == 4 || address.size == 16) { "Invalid size for address" }
+        if(MIXED_MODE) {
+            require(address.size == 4 || address.size == 16) { "Invalid size for address" }
+        } else {
+            require(address.size == 16) { "Only ipv6 addresses are excepted" }
+        }
         require(port > 0.toUShort() && port <= 65535.toUShort()) {
             "Invalid port: $port"
         }
