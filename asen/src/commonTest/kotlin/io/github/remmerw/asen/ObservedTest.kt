@@ -20,7 +20,7 @@ class ObservedTest {
             val peeraddr = Peeraddr(server.peerId(), address, 1234.toUShort())
             assertNotNull(peeraddr)
 
-            println("Address " + peeraddr.address())
+            println("Address " + peeraddr.hostname())
             if (peeraddr.inet4()) {
                 println("Warning only IPv4 address")
             }

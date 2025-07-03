@@ -73,7 +73,7 @@ class ConnectTest {
                 connection = connect(server, peeraddr)
             } catch (throwable: Throwable) {
                 println(
-                    "Connection failed ${peeraddr.address()} " + throwable.message
+                    "Connection failed peeraddr " + throwable.message
                 )
                 continue
             }

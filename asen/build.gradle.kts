@@ -80,6 +80,10 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation("androidx.test:runner:1.6.2")
         }
+
+        androidUnitTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
     }
 }
 

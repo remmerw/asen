@@ -59,7 +59,7 @@ internal fun encodePart(address: ByteArray, buffer: Buffer) {
 }
 
 
-fun address(address: ByteArray): String {
+fun hostname(address: ByteArray): String {
     if (address.size == 4) {
         return numericInet4(address)
     }

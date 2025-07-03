@@ -16,6 +16,9 @@ class Examples {
         val bob = newAsen()
         val alice = newAsen()
 
+        val observerAddress = bob.observedAddress()
+        assertNotNull(observerAddress, "Observer Address not defined")
+
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
         val publicAddresses = listOf(
@@ -23,7 +26,7 @@ class Examples {
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                bob.observedAddress()!!,
+                observerAddress,
                 5001.toUShort()
             )
         )
@@ -39,7 +42,6 @@ class Examples {
 
         // [2] alice can find bob addresses via its peerId
         val peeraddrs = alice.resolveAddresses(bob.peerId(), 120)  // timeout max 2 min (120 s)
-
 
         // testing
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses
@@ -92,7 +94,7 @@ class Examples {
                 val address = addresses.first()
                 assertEquals(address.peerId, bob.peerId())
             } else {
-                println("Shitty relay " + relay.address())
+                println("Shitty relay " + relay.hostname())
             }
 
             alice.shutdown()

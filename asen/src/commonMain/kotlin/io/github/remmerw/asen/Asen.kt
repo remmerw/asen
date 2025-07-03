@@ -20,6 +20,7 @@ import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Connector
 import io.ktor.network.selector.SelectorManager
+import io.ktor.network.sockets.InetSocketAddress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.cancelChildren
@@ -34,12 +35,13 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.random.Random
 
-internal const val MIXED_MODE = true
+internal const val MIXED_MODE = false
 internal const val DHT_ALPHA: Int = 30
 internal const val DHT_CONCURRENCY: Int = 5
 internal const val TIMEOUT: Int = 5 // in seconds
 val LIBP2P_CERTIFICATE_EXTENSION: String = prefixToString()
 
+expect fun createInetSocketAddress(address: ByteArray, port: Int): InetSocketAddress
 
 interface PeerStore {
     suspend fun peeraddrs(limit: Int): List<Peeraddr>
@@ -80,7 +82,7 @@ class Asen internal constructor(
         try {
             connection = connect(this, relay)
             return connectHop(connection, target, signatureMessage)
-        } catch (throwable: Throwable){
+        } catch (throwable: Throwable) {
             debug("Error message " + throwable.message)
         } finally {
             connection?.close()
@@ -243,7 +245,7 @@ class MemoryPeers : PeerStore {
 fun bootstrap(): List<Peeraddr> {
     // "/ip4/104.131.131.82/udp/4001/quic/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ"
     val peeraddrs = mutableListOf<Peeraddr>()
-    if(MIXED_MODE) {
+    if (MIXED_MODE) {
         peeraddrs.add(
             createPeeraddr(
                 "QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
@@ -259,7 +261,7 @@ fun bootstrap(): List<Peeraddr> {
 data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) :
     Comparable<Peeraddr> {
     init {
-        if(MIXED_MODE) {
+        if (MIXED_MODE) {
             require(address.size == 4 || address.size == 16) { "Invalid size for address" }
         } else {
             require(address.size == 16) { "Only ipv6 addresses are excepted" }
@@ -269,13 +271,12 @@ data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort
         }
     }
 
-
-    fun address(): String {
-        return io.github.remmerw.asen.core.address(address)
-    }
-
     fun encoded(): ByteArray {
         return io.github.remmerw.asen.core.encoded(address, port)
+    }
+
+    fun hostname(): String {
+        return io.github.remmerw.asen.core.hostname(address)
     }
 
     fun inet4(): Boolean {
@@ -533,6 +534,7 @@ private fun readPart(code: Int, cis: Buffer): Any? {
                     null
                 }
             }
+
             IP6 -> {
                 return cis.readByteArray(sizeForAddress)
             }
