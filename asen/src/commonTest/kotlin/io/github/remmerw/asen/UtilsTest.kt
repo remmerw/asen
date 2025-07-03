@@ -206,7 +206,7 @@ class UtilsTest {
         val port = 4001
         val random = TestEnv.randomPeerId()
         val address = AddressUtil.textToNumericFormatV6("::1")!!
-        val publicAddresses = listOf(Peeraddr(random, address, port.toUShort()))
+        val publicAddresses = listOf(createPeeraddr(random, address, port.toUShort()))
 
         publicAddresses.forEach { peeraddr ->
             assertNotNull(peeraddr)

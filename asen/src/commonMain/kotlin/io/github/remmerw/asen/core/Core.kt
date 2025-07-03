@@ -22,6 +22,7 @@ import dev.whyoleg.cryptography.bigint.BigInt
 import dev.whyoleg.cryptography.bigint.decodeToBigInt
 import dev.whyoleg.cryptography.bigint.encodeToByteArray
 import dev.whyoleg.cryptography.bigint.toBigInt
+import io.github.remmerw.asen.Address
 import io.github.remmerw.asen.Asen
 import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
@@ -112,7 +113,7 @@ internal fun reachablePeeraddr(peerIdRaw: ByteArray, addresses: List<ByteArray>)
     if (peerId != null) {
         val peeraddrs = createPeeraddrs(peerId, addresses)
         for (peer in peeraddrs) {
-            if (!peer.isLanAddress()) {
+            if (!peer.address.isLanAddress()) {
                 return peer
             }
         }
@@ -521,9 +522,9 @@ internal suspend fun resolveAddresses(): Set<Peeraddr> {
 
 
 @OptIn(ExperimentalAtomicApi::class)
-suspend fun observedAddresses(asen: Asen): Set<ByteArray> = coroutineScope {
+suspend fun observedAddresses(asen: Asen): Set<Address> = coroutineScope {
 
-    val result: MutableSet<ByteArray> = ConcurrentSet()
+    val result: MutableSet<Address> = ConcurrentSet()
     val addresses = resolveAddresses() // this you can trust
 
     addresses.forEach { peeraddr ->
@@ -533,7 +534,7 @@ suspend fun observedAddresses(asen: Asen): Set<ByteArray> = coroutineScope {
                 if (MIXED_MODE) {
                     result.add(observed)
                 } else {
-                    if (observed.size == 16) { // 16 is ipv6
+                    if (observed.inet6()) {
                         result.add(observed)
                     }
                 }
@@ -627,7 +628,7 @@ private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean
 }
 
 
-private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): ByteArray? {
+private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): Address? {
     val connection: Connection = connect(asen, peeraddr)
     try {
         asen.peerStore().store(peeraddr)

@@ -62,7 +62,7 @@ class Asen internal constructor(
     /**
      * This function tries to evaluate its own IP addresses by asking other peers (ipv4 and ipv6)
      */
-    suspend fun observedAddresses(): Set<ByteArray> {
+    suspend fun observedAddresses(): Set<Address> {
         return observedAddresses(this)
     }
 
@@ -256,68 +256,59 @@ fun bootstrap(): List<Peeraddr> {
     return peeraddrs
 }
 
-
-data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) :
-    Comparable<Peeraddr> {
+data class Address(val bytes: ByteArray) {
     init {
         if (MIXED_MODE) {
-            require(address.size == 4 || address.size == 16) { "Invalid size for address" }
+            require(bytes.size == 4 || bytes.size == 16) { "Invalid size for address" }
         } else {
-            require(address.size == 16) { "Only ipv6 addresses are excepted" }
+            require(bytes.size == 16) { "Only ipv6 addresses are excepted" }
         }
-        require(port > 0.toUShort() && port <= 65535.toUShort()) {
-            "Invalid port: $port"
-        }
-    }
-
-    fun encoded(): ByteArray {
-        return io.github.remmerw.asen.core.encoded(address, port)
-    }
-
-    fun hostname(): String {
-        return io.github.remmerw.asen.core.hostname(address)
-    }
-
-    fun inet4(): Boolean {
-        return address.size == 4
-    }
-
-    fun inet6(): Boolean {
-        return address.size == 16
-    }
-
-    fun isLanAddress(): Boolean {
-        return io.github.remmerw.asen.core.isLanAddress(address)
-    }
-
-    override fun hashCode(): Int {
-        var result = peerId.hashCode()
-        result = 31 * result + address.contentHashCode()
-        result = 31 * result + port.hashCode()
-        return result
     }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as Peeraddr
+        other as Address
 
-        if (peerId != other.peerId) return false
-        if (!address.contentEquals(other.address)) return false
-        if (port != other.port) return false
-
-        return true
+        return bytes.contentEquals(other.bytes)
     }
 
-    override fun compareTo(other: Peeraddr): Int {
-        val cmp = address.size.compareTo(other.address.size)
-        return if (cmp != 0) {
-            -cmp // ipv6 is higher priority
-        } else {
-            hashCode().compareTo(other.hashCode()) // good enough not perfect
+
+    override fun hashCode(): Int {
+        return bytes.contentHashCode()
+    }
+
+    fun hostname(): String {
+        return io.github.remmerw.asen.core.hostname(bytes)
+    }
+
+    fun inet4(): Boolean {
+        return bytes.size == 4
+    }
+
+    fun inet6(): Boolean {
+        return bytes.size == 16
+    }
+
+    fun isLanAddress(): Boolean {
+        return io.github.remmerw.asen.core.isLanAddress(bytes)
+    }
+
+
+}
+
+data class Peeraddr(val peerId: PeerId, val address: Address, val port: UShort) {
+    init {
+        require(port > 0.toUShort() && port <= 65535.toUShort()) {
+            "Invalid port: $port"
         }
     }
+
+    fun encoded(): ByteArray {
+        return io.github.remmerw.asen.core.encoded(address.bytes, port)
+    }
+
 }
 
 // hash is always (32 bit) and it is a Ed25519 public key
@@ -419,8 +410,9 @@ fun parsePeerId(raw: ByteArray): PeerId? {
     return null
 }
 
+
 fun createPeeraddr(peerId: PeerId, address: ByteArray, port: UShort): Peeraddr {
-    return Peeraddr(peerId, address, port)
+    return Peeraddr(peerId, Address(address), port)
 }
 
 fun createPeeraddr(peerId: String, address: ByteArray, port: UShort): Peeraddr {
@@ -466,7 +458,7 @@ fun parseAddress(peerId: PeerId, bytes: ByteArray): Peeraddr? {
 
     // check if address has a port, when it is not a dnsAddr
     if (port > 0.toUShort() && address != null) {
-        return Peeraddr(peerId, address, port)
+        return createPeeraddr(peerId, address, port)
     }
     return null
 }

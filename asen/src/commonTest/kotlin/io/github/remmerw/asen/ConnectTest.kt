@@ -27,8 +27,8 @@ class ConnectTest {
             val peeraddr = createPeeraddr(peerId, address, 4001.toUShort())
             assertEquals(4001.toUShort(), peeraddr.port)
 
-            assertTrue(peeraddr.inet4())
-            assertFalse(peeraddr.inet6())
+            assertTrue(peeraddr.address.inet4())
+            assertFalse(peeraddr.address.inet6())
 
             assertEquals(peeraddr.peerId, peerId)
 

@@ -43,7 +43,10 @@ suspend fun connect(
     timeout: Int
 ): Connection {
 
-    val address = createInetSocketAddress(peeraddr.address, peeraddr.port.toInt())
+    val address = createInetSocketAddress(
+        peeraddr.address.bytes,
+        peeraddr.port.toInt()
+    )
 
     val responder = Responder(protocols)
 
