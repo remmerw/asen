@@ -34,7 +34,7 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.random.Random
 
-internal const val MIXED_MODE = true
+internal const val MIXED_MODE = false
 internal const val DHT_ALPHA: Int = 30
 internal const val DHT_CONCURRENCY: Int = 5
 internal const val TIMEOUT: Int = 5 // in seconds
@@ -525,17 +525,16 @@ private fun readPart(code: Int, cis: Buffer): Any? {
     try {
         val sizeForAddress = sizeForAddress(code, cis)
         when (code) {
-            IP4, IP6 -> {
+            IP4 -> {
                 val address = cis.readByteArray(sizeForAddress)
                 return if (MIXED_MODE) {
-                    address
+                    address // ipv4 in mixed mode accepted
                 } else {
-                    if (address.size == 4) { // only ipv4
-                        address
-                    } else {
-                        null
-                    }
+                    null
                 }
+            }
+            IP6 -> {
+                return cis.readByteArray(sizeForAddress)
             }
 
             UDP -> {

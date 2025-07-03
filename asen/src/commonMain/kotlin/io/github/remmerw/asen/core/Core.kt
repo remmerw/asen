@@ -489,14 +489,29 @@ internal suspend fun resolveAddresses(): Set<Peeraddr> {
             val port = tokens[4].toUShort()
             val peerId = tokens[7]
 
-            val address = if (ip == "ip4") {
-                textToNumericFormatV4(host)
+            if (MIXED_MODE) {
+                if (ip == "ip4") {
+                    val peeraddr = createPeeraddr(
+                        peerId,
+                        textToNumericFormatV4(host)!!, port
+                    )
+                    addresses.add(peeraddr)
+                } else if (ip == "ip6") {
+                    val peeraddr = createPeeraddr(
+                        peerId,
+                        textToNumericFormatV6(host)!!, port
+                    )
+                    addresses.add(peeraddr)
+                }
             } else {
-                textToNumericFormatV6(host)
-            }!!
-
-            val peeraddr = createPeeraddr(peerId, address, port)
-            addresses.add(peeraddr)
+                if (ip == "ip6") {
+                    val peeraddr = createPeeraddr(
+                        peerId,
+                        textToNumericFormatV6(host)!!, port
+                    )
+                    addresses.add(peeraddr)
+                }
+            }
         } catch (throwable: Throwable) {
             debug(throwable)
         }
@@ -513,25 +528,21 @@ suspend fun observedAddress(asen: Asen): ByteArray? {
 
 
     coroutineScope {
+        val scope = coroutineContext
         // first ipv6 then ipv4 (after the sorting)
         try {
-            if (MIXED_MODE) {
-                addresses.sorted().forEach { peeraddr ->
-                    launch {
-                        val observed = observedAddress(asen, peeraddr)
-                        if (observed != null) {
+            addresses.sorted().forEach { peeraddr ->
+                launch {
+                    val observed = observedAddress(asen, peeraddr)
+                    if (observed != null) {
+                        if (MIXED_MODE) {
                             address.store(observed)
-                            coroutineContext.cancelChildren()
-                        }
-                    }
-                }
-            } else {
-                addresses.filter { peeraddr -> peeraddr.inet6() }.forEach { peeraddr ->
-                    launch {
-                        val observed = observedAddress(asen, peeraddr)
-                        if (observed != null && observed.size == 16) { // 16 is ipv6
-                            address.store(observed)
-                            coroutineContext.cancelChildren()
+                            scope.cancelChildren()
+                        } else {
+                            if (observed.size == 16) { // 16 is ipv6
+                                address.store(observed)
+                                scope.cancelChildren()
+                            }
                         }
                     }
                 }
@@ -627,24 +638,21 @@ private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean
 
 
 private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): ByteArray? {
+    val connection: Connection = connect(asen, peeraddr)
     try {
-        val connection: Connection = connect(asen, peeraddr)
-        try {
-            asen.peerStore().store(peeraddr)
-            val info = identify(connection)
-            if (info.observedAddress != null) {
-                val observed = parseAddress(
-                    asen.peerId(),
-                    info.observedAddress
-                )
-                if (observed != null) {
-                    return observed.address
-                }
+        asen.peerStore().store(peeraddr)
+        val info = identify(connection)
+        if (info.observedAddress != null) {
+            val observed = parseAddress(
+                asen.peerId(),
+                info.observedAddress
+            )
+            if (observed != null) {
+                return observed.address
             }
-        } finally {
-            connection.close()
         }
-    } catch (_: Throwable) {
+    } finally {
+        connection.close()
     }
     return null
 }

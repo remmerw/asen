@@ -1,6 +1,5 @@
 package io.github.remmerw.asen
 
-import io.github.remmerw.asen.core.AddressUtil
 import io.github.remmerw.asen.core.connect
 import io.github.remmerw.asen.core.identify
 import io.github.remmerw.asen.quic.Connection
@@ -45,12 +44,7 @@ class ConnectTest {
     fun testIdentify(): Unit = runBlocking(Dispatchers.IO) {
 
         val server = newAsen()
-        val address = byteArrayOf(127, 0, 0, 1)
-        val cmp = AddressUtil.textToNumericFormatV4("127.0.0.1")
-        assertNotNull(cmp)
-        assertTrue(address.contentEquals(cmp))
-        assertTrue(AddressUtil.isIPv4LiteralAddress("127.0.0.1"))
-        assertFalse(AddressUtil.isIPv6LiteralAddress("127.0.0.1"))
+        val address = server.observedAddress()!!
 
         val publicAddresses = listOf(
             Peeraddr(

@@ -101,6 +101,4 @@ class Examples {
         bob.shutdown()
 
     }
-
-
 }

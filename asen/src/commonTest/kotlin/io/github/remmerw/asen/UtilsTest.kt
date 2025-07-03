@@ -20,6 +20,7 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -176,6 +177,15 @@ class UtilsTest {
         assertEquals(peerId, random)
     }
 
+    @Test
+    fun addressUtils() {
+        val address = byteArrayOf(127, 0, 0, 1)
+        val cmp = AddressUtil.textToNumericFormatV4("127.0.0.1")
+        assertNotNull(cmp)
+        assertTrue(address.contentEquals(cmp))
+        assertTrue(AddressUtil.isIPv4LiteralAddress("127.0.0.1"))
+        assertFalse(AddressUtil.isIPv6LiteralAddress("127.0.0.1"))
+    }
 
     @Test
     fun ipv6Test() {

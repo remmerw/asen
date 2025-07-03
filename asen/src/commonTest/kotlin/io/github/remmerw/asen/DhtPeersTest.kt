@@ -1,5 +1,6 @@
 package io.github.remmerw.asen
 
+import io.github.remmerw.asen.core.AddressUtil
 import io.github.remmerw.asen.core.DhtPeer
 import io.github.remmerw.asen.core.DhtPeers
 import io.github.remmerw.asen.core.Key
@@ -116,8 +117,7 @@ class DhtPeersTest {
 
     private fun random(key: Key): DhtPeer {
         val random = TestEnv.randomPeerId()
-        // "139.178.68.146"
-        val address = byteArrayOf(139.toByte(), 178.toByte(), 68.toByte(), 146.toByte())
+        val address = AddressUtil.textToNumericFormatV6("::1")!!
         val peeraddr = createPeeraddr(random, address, 4001.toUShort())
 
         return createDhtPeer(peeraddr, false, key)
@@ -125,8 +125,8 @@ class DhtPeersTest {
 
     private fun perfect(key: Key): DhtPeer {
         val random = PeerId(key.hash)
-        // "139.178.68.146"
-        val address = byteArrayOf(139.toByte(), 178.toByte(), 68.toByte(), 146.toByte())
+
+        val address = AddressUtil.textToNumericFormatV6("::1")!!
         val peeraddr = createPeeraddr(random, address, 4001.toUShort())
         return createDhtPeer(peeraddr, false, key)
     }
