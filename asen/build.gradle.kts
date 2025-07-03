@@ -48,6 +48,7 @@ kotlin {
                 implementation(libs.cryptography.bigint)
                 implementation(libs.curve25519) // TODO replace in the future
 
+                //implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.0")
                 implementation("io.github.remmerw:frey:0.0.1")
             }
         }

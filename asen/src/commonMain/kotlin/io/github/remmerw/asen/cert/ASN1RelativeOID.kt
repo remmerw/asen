@@ -1,6 +1,7 @@
 package io.github.remmerw.asen.cert
 
-import java.math.BigInteger
+import com.ionspin.kotlin.bignum.integer.BigInteger
+
 
 class ASN1RelativeOID(contents: ByteArray) : ASN1Primitive() {
     private val identifier: String
@@ -31,9 +32,9 @@ class ASN1RelativeOID(contents: ByteArray) : ASN1Primitive() {
                 }
             } else {
                 if (bigValue == null) {
-                    bigValue = BigInteger.valueOf(value)
+                    bigValue = BigInteger(value)
                 }
-                bigValue = bigValue!!.or(BigInteger.valueOf((b and 0x7F).toLong()))
+                bigValue = bigValue.or(BigInteger((b and 0x7F).toLong()))
                 if ((b and 0x80) == 0) {
                     if (first) {
                         first = false
@@ -45,7 +46,7 @@ class ASN1RelativeOID(contents: ByteArray) : ASN1Primitive() {
                     bigValue = null
                     value = 0
                 } else {
-                    bigValue = bigValue.shiftLeft(7)
+                    bigValue = bigValue.shl(7)
                 }
             }
         }

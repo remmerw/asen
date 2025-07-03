@@ -1,6 +1,9 @@
 package io.github.remmerw.asen.cert
 
+import kotlin.concurrent.Volatile
+
 class BCStyle private constructor() : AbstractX500NameStyle() {
+
     override fun encodeStringValue(oid: ASN1ObjectIdentifier, value: String): ASN1Encodable {
         if (oid.equals(EmailAddress) || oid.equals(DC)) {
             return DERIA5String(value)
@@ -257,9 +260,7 @@ class BCStyle private constructor() : AbstractX500NameStyle() {
         val instance: BCStyle
             get() {
                 if (INSTANCE == null) {
-                    synchronized(BCStyle::class.java) {
-                        INSTANCE = BCStyle()
-                    }
+                    INSTANCE = BCStyle()
                 }
                 return INSTANCE!!
             }

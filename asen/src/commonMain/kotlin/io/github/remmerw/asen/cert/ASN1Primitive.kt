@@ -71,7 +71,7 @@ abstract class ASN1Primitive : ASN1Object() {
      */
     abstract fun asn1Equals(other: ASN1Primitive): Boolean
     override fun hashCode(): Int {
-        return javaClass.hashCode()
+        return this::class.hashCode()
     }
 
     companion object {

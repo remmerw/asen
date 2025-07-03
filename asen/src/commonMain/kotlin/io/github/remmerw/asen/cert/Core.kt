@@ -1,9 +1,9 @@
 package io.github.remmerw.asen.cert
 
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
-import java.math.BigInteger
 
 
 const val DER: String = "DER"
@@ -67,8 +67,8 @@ fun writeField(out: Buffer, fieldValue: BigInteger) {
         var tmpValue = fieldValue
         val tmp = ByteArray(byteCount)
         for (i in byteCount - 1 downTo 0) {
-            tmp[i] = (tmpValue.toInt() or 0x80).toByte()
-            tmpValue = tmpValue.shiftRight(7)
+            tmp[i] = (tmpValue.intValue() or 0x80).toByte()
+            tmpValue = tmpValue.shr(7)
         }
         tmp[byteCount - 1] = (tmp[byteCount - 1].toInt() and 0x7F).toByte()
         out.write(tmp, 0, tmp.size)
@@ -630,7 +630,7 @@ fun toUpperCase(string: String): String {
     }
 
     if (changed) {
-        return String(chars)
+        return chars.concatToString()
     }
 
     return string
@@ -655,7 +655,7 @@ fun toLowerCase(string: String): String {
     }
 
     if (changed) {
-        return String(chars)
+        return chars.concatToString()
     }
 
     return string

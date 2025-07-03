@@ -1,8 +1,8 @@
 package io.github.remmerw.asen.cert
 
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import java.math.BigInteger
 
 /**
  * Class representing the ASN.1 OBJECT IDENTIFIER payloadType.
@@ -49,13 +49,13 @@ class ASN1ObjectIdentifier : ASN1Primitive {
                 }
             } else {
                 if (bigValue == null) {
-                    bigValue = BigInteger.valueOf(value)
+                    bigValue = BigInteger(value)
                 }
-                bigValue = bigValue!!.or(BigInteger.valueOf((b and 0x7F).toLong()))
+                bigValue = bigValue.or(BigInteger((b and 0x7F).toLong()))
                 if ((b and 0x80) == 0) {
                     if (first) {
                         objId.append('2')
-                        bigValue = bigValue.subtract(BigInteger.valueOf(80))
+                        bigValue = bigValue.subtract(BigInteger(80))
                         first = false
                     }
 
@@ -64,7 +64,7 @@ class ASN1ObjectIdentifier : ASN1Primitive {
                     bigValue = null
                     value = 0
                 } else {
-                    bigValue = bigValue.shiftLeft(7)
+                    bigValue = bigValue.shl(7)
                 }
             }
         }
@@ -121,7 +121,8 @@ class ASN1ObjectIdentifier : ASN1Primitive {
         if (secondToken.length <= 18) {
             writeField(aOut, first + secondToken.toLong())
         } else {
-            writeField(aOut, BigInteger(secondToken).add(BigInteger.valueOf(first.toLong())))
+            val result = BigInteger.parseString(secondToken).add(BigInteger(first.toLong()))
+            writeField(aOut, result)
         }
 
         while (tok.hasMoreTokens()) {
@@ -130,7 +131,7 @@ class ASN1ObjectIdentifier : ASN1Primitive {
             if (token.length <= 18) {
                 writeField(aOut, token.toLong())
             } else {
-                writeField(aOut, BigInteger(token))
+                writeField(aOut, BigInteger.parseString(token))
             }
         }
     }
@@ -177,27 +178,7 @@ class ASN1ObjectIdentifier : ASN1Primitive {
      */
     fun intern(): ASN1ObjectIdentifier {
         val hdl = OidHandle.create(contents)
-        var oid = pool[hdl]
-        if (oid == null) {
-            oid = pool.putIfAbsent(hdl, this)
-            if (oid == null) {
-                oid = this
-            }
-        }
-        return oid
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        if (!super.equals(other)) return false
-
-        other as ASN1ObjectIdentifier
-
-        if (id != other.id) return false
-        if (!contents.contentEquals(other.contents)) return false
-
-        return true
+        return pool.getOrPut(hdl) { this }
     }
 
 
@@ -247,5 +228,19 @@ class ASN1ObjectIdentifier : ASN1Primitive {
             )
             return oid
         }
+    }
+
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        if (!super.equals(other)) return false
+
+        other as ASN1ObjectIdentifier
+
+        if (id != other.id) return false
+        if (!contents.contentEquals(other.contents)) return false
+
+        return true
     }
 }

@@ -17,7 +17,6 @@ import io.github.remmerw.asen.cert.SubjectPublicKeyInfo
 import io.github.remmerw.asen.cert.X500Name
 import io.github.remmerw.asen.cert.X509v3CertificateBuilder
 import io.github.remmerw.asen.identifyPeerId
-import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.sign
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -102,7 +101,7 @@ private fun getPrefixedExtensionID(suffix: IntArray): IntArray {
 // the client sent.
 // [-> done see Connection.remoteCertificate() and the usage]
 @OptIn(ExperimentalEncodingApi::class)
-internal fun createCertificateNott(keys: Keys): Certificate? {
+internal fun createCertificateNott(keys: Keys): io.github.remmerw.asen.cert.Certificate {
 
 
     val now: Instant = Clock.System.now()
@@ -189,10 +188,11 @@ internal fun createCertificateNott(keys: Keys): Certificate? {
     // connection attempt if the certificate contains critical extensions that the
     // endpoint does not understand.
 
-    builder.addExtension(indent, false, signedKey)
+    return builder.addExtension(indent, false, signedKey)
         .build("SHA256withECDSA", key)
 
-    return null // todo Certificate(cert.encoded(), key, "SHA256withECDSA")
+
+   // return null // todo Certificate(cert.encoded(), key, "SHA256withECDSA")
 }
 
 class SignedKey internal constructor(pubKey: ByteArray, signature: ByteArray) : ASN1Object() {

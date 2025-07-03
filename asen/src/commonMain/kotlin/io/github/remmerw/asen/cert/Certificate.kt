@@ -14,7 +14,7 @@ package io.github.remmerw.asen.cert
 class Certificate private constructor(private val seq: ASN1Sequence) : ASN1Object() {
     init {
         //
-        // correct x509 certficate
+        // correct x509 certificate
         //
         if (seq.size() == 3) {
             TBSCertificate.getInstance(seq.getObjectAt(0))
