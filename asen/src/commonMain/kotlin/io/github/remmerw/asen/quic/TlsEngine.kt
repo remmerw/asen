@@ -1,6 +1,5 @@
 package io.github.remmerw.asen.quic
 
-import at.asitplus.signum.indispensable.pki.X509Certificate
 import dev.whyoleg.cryptography.algorithms.ECDSA
 import org.kotlincrypto.macs.hmac.sha2.HmacSHA256
 

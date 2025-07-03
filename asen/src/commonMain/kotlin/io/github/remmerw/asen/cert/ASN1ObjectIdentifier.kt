@@ -1,6 +1,5 @@
 package io.github.remmerw.asen.cert
 
-import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 
@@ -19,53 +18,33 @@ class ASN1ObjectIdentifier : ASN1Primitive {
     private constructor(contents: ByteArray) {
         val objId = StringBuilder()
         var value = 0L
-        var bigValue: BigInteger? = null
+
         var first = true
 
         for (i in contents.indices) {
             val b = contents[i].toInt() and 0xff
 
-            if (value <= LONG_LIMIT) {
-                value += (b and 0x7F).toLong()
-                if ((b and 0x80) == 0) {
-                    if (first) {
-                        if (value < 40) {
-                            objId.append('0')
-                        } else if (value < 80) {
-                            objId.append('1')
-                            value -= 40
-                        } else {
-                            objId.append('2')
-                            value -= 80
-                        }
-                        first = false
-                    }
-
-                    objId.append('.')
-                    objId.append(value)
-                    value = 0
-                } else {
-                    value = value shl 7
-                }
-            } else {
-                if (bigValue == null) {
-                    bigValue = BigInteger(value)
-                }
-                bigValue = bigValue.or(BigInteger((b and 0x7F).toLong()))
-                if ((b and 0x80) == 0) {
-                    if (first) {
+            require(value <= LONG_LIMIT) { "out of supported range" }
+            value += (b and 0x7F).toLong()
+            if ((b and 0x80) == 0) {
+                if (first) {
+                    if (value < 40) {
+                        objId.append('0')
+                    } else if (value < 80) {
+                        objId.append('1')
+                        value -= 40
+                    } else {
                         objId.append('2')
-                        bigValue = bigValue.subtract(BigInteger(80))
-                        first = false
+                        value -= 80
                     }
-
-                    objId.append('.')
-                    objId.append(bigValue)
-                    bigValue = null
-                    value = 0
-                } else {
-                    bigValue = bigValue.shl(7)
+                    first = false
                 }
+
+                objId.append('.')
+                objId.append(value)
+                value = 0
+            } else {
+                value = value shl 7
             }
         }
 
@@ -118,21 +97,14 @@ class ASN1ObjectIdentifier : ASN1Primitive {
 
         val secondToken = tok.nextToken()
         checkNotNull(secondToken)
-        if (secondToken.length <= 18) {
-            writeField(aOut, first + secondToken.toLong())
-        } else {
-            val result = BigInteger.parseString(secondToken).add(BigInteger(first.toLong()))
-            writeField(aOut, result)
-        }
+        require(secondToken.length <= 18) { "out of supported range" }
+        writeField(aOut, first + secondToken.toLong())
 
         while (tok.hasMoreTokens()) {
             val token = tok.nextToken()
             checkNotNull(token)
-            if (token.length <= 18) {
-                writeField(aOut, token.toLong())
-            } else {
-                writeField(aOut, BigInteger.parseString(token))
-            }
+            require(token.length <= 18) { "out of supported range" }
+            writeField(aOut, token.toLong())
         }
     }
 

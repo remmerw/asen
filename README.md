@@ -89,7 +89,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             ...
-            implementation("io.github.remmerw:asen:0.3.2")
+            implementation("io.github.remmerw:asen:0.3.3")
         }
         ...
     }
@@ -188,7 +188,7 @@ Documentation of relays are documented
 under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.md#introduction).
 
 ```
-     /**
+    /**
      * Makes a reservation o relay nodes with the purpose that other peers can fin you via
      * the nodes peerId
      *
@@ -231,8 +231,9 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
         val bob = newAsen()
         val alice = newAsen()
 
-        val observerAddress = bob.observedAddress()
-        assertNotNull(observerAddress, "Observer Address not defined")
+        val observerAddresses = bob.observedAddresses()
+        assertTrue(observerAddresses.isNotEmpty(), "Observer Addresses not defined")
+
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
         val publicAddresses = listOf(
@@ -240,7 +241,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                observerAddress,
+                observerAddresses.first(),
                 5001.toUShort()
             )
         )
@@ -252,11 +253,13 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
             120
         )  // timeout max 2 min (120 s) or 20 relays
 
+        println("Reservations " + bob.numReservations())
+
         assertTrue(bob.hasReservations())
 
         // [2] alice can find bob addresses via its peerId
         val peeraddrs = alice.resolveAddresses(bob.peerId(), 120)  // timeout max 2 min (120 s)
-        
+
         // testing
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses
         assertTrue(peeraddrs.isNotEmpty())

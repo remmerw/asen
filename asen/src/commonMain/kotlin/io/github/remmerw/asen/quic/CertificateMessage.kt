@@ -1,6 +1,6 @@
 package io.github.remmerw.asen.quic
 
-import at.asitplus.signum.indispensable.pki.X509Certificate
+
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 

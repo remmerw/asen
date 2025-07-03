@@ -1,8 +1,5 @@
 package io.github.remmerw.asen.quic
 
-import at.asitplus.signum.indispensable.pki.X509Certificate
-import dev.whyoleg.cryptography.CryptographyProvider
-import dev.whyoleg.cryptography.algorithms.EC
 import dev.whyoleg.cryptography.algorithms.ECDSA
 import dev.whyoleg.cryptography.algorithms.SHA256
 import kotlinx.io.Buffer
@@ -173,53 +170,54 @@ internal fun computeSignature(
     }
 }
 
+/** TODO activate it again, when found a suitable library
 internal fun verifySignature(
-    signatureScheme: SignatureScheme,
-    certificate: X509Certificate,
-    transcriptHash: ByteArray
+signatureScheme: SignatureScheme,
+certificate: X509Certificate,
+transcriptHash: ByteArray
 ): Boolean {
-    // https://tools.ietf.org/html/rfc8446#section-4.4.3
-    // "The digital signature is then computed over the concatenation of:
-    //   -  A string that consists of octet 32 (0x20) repeated 64 times
-    //   -  The context string
-    //   -  A single 0 byte which serves as the separator
-    //   -  The content to be signed"
-    val contextString = "TLS 1.3, " + ("server") + " CertificateVerify"
-    val size = 64 + contextString.encodeToByteArray().size + 1 + transcriptHash.size
+// https://tools.ietf.org/html/rfc8446#section-4.4.3
+// "The digital signature is then computed over the concatenation of:
+//   -  A string that consists of octet 32 (0x20) repeated 64 times
+//   -  The context string
+//   -  A single 0 byte which serves as the separator
+//   -  The content to be signed"
+val contextString = "TLS 1.3, " + ("server") + " CertificateVerify"
+val size = 64 + contextString.encodeToByteArray().size + 1 + transcriptHash.size
 
-    val contentToSign = Buffer()
-    repeat(64) {
-        contentToSign.writeByte(0x20.toByte())
-    }
-    // "The context string for a server signature is
-    //   "TLS 1.3, server CertificateVerify". "
-    contentToSign.write(contextString.encodeToByteArray())
-    contentToSign.writeByte(0x00.toByte())
-    // "The content that is covered
-    //   under the signature is the hash output as described in Section 4.4.1,
-    //   namely:
-    //      Transcript-Hash(Handshake Context, Certificate)"
-    contentToSign.write(transcriptHash)
-    require(size == contentToSign.size.toInt())
-
-    // https://tools.ietf.org/html/rfc8446#section-9.1
-    // "A TLS-compliant application MUST support digital signatures with rsa_pkcs1_sha256 (for certificates),
-    // rsa_pss_rsae_sha256 (for CertificateVerify and certificates), and ecdsa_secp256r1_sha256."
-    require(signatureScheme == SignatureScheme.ECDSA_SECP256R1_SHA256) {
-        "Not yet supported signature scheme " + signatureScheme.name
-    }
-
-    val ecdsa = CryptographyProvider.Default.get(ECDSA)
-
-    val serverPublicKey = ecdsa.publicKeyDecoder(EC.Curve.P256)
-        .decodeFromByteArrayBlocking(
-            EC.PublicKey.Format.DER,
-            certificate.publicKey.encodeToDer()
-        )
-
-    val verifier = serverPublicKey.signatureVerifier(SHA256, ECDSA.SignatureFormat.DER)
-    return verifier.tryVerifySignatureBlocking(
-        certificate.tbsCertificate.encodeToDer(),
-        certificate.signature.encodeToDer()
-    )
+val contentToSign = Buffer()
+repeat(64) {
+contentToSign.writeByte(0x20.toByte())
 }
+// "The context string for a server signature is
+//   "TLS 1.3, server CertificateVerify". "
+contentToSign.write(contextString.encodeToByteArray())
+contentToSign.writeByte(0x00.toByte())
+// "The content that is covered
+//   under the signature is the hash output as described in Section 4.4.1,
+//   namely:
+//      Transcript-Hash(Handshake Context, Certificate)"
+contentToSign.write(transcriptHash)
+require(size == contentToSign.size.toInt())
+
+// https://tools.ietf.org/html/rfc8446#section-9.1
+// "A TLS-compliant application MUST support digital signatures with rsa_pkcs1_sha256 (for certificates),
+// rsa_pss_rsae_sha256 (for CertificateVerify and certificates), and ecdsa_secp256r1_sha256."
+require(signatureScheme == SignatureScheme.ECDSA_SECP256R1_SHA256) {
+"Not yet supported signature scheme " + signatureScheme.name
+}
+
+val ecdsa = CryptographyProvider.Default.get(ECDSA)
+
+val serverPublicKey = ecdsa.publicKeyDecoder(EC.Curve.P256)
+.decodeFromByteArrayBlocking(
+EC.PublicKey.Format.DER,
+certificate.publicKey.encodeToDer()
+)
+
+val verifier = serverPublicKey.signatureVerifier(SHA256, ECDSA.SignatureFormat.DER)
+return verifier.tryVerifySignatureBlocking(
+certificate.tbsCertificate.encodeToDer(),
+certificate.signature.encodeToDer()
+)
+} */

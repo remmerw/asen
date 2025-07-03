@@ -247,13 +247,14 @@ internal class TlsClientEngine(
         }
 
 
+        /** TODO activate it again, when found a suitable library
         if (!verifySignature(
-                signatureScheme, remoteCertificate!!,
-                transcriptHash!!.getServerHash(HandshakeType.CERTIFICATE)
-            )
+        signatureScheme, remoteCertificate!!,
+        transcriptHash!!.getServerHash(HandshakeType.CERTIFICATE)
+        )
         ) {
-            throw DecryptErrorAlert("signature verification fails")
-        }
+        throw DecryptErrorAlert("signature verification fails")
+        } */
 
 
         transcriptHash!!.recordServer(certificateVerifyMessage)

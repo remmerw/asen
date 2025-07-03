@@ -41,14 +41,14 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.kotlinx.serialization.protobuf)
-                implementation(libs.hmac.sha2) // TODO replace in the future
                 implementation(libs.ktor.network)
                 implementation(libs.cryptography.core)
-                implementation(libs.indispensable) // TODO replace in the future [Blocker to big]
                 implementation(libs.cryptography.bigint)
+                implementation(libs.hmac.sha2)
+
                 implementation(libs.curve25519) // TODO replace in the future
 
-                //implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.0")
                 implementation("io.github.remmerw:frey:0.0.1")
             }
         }

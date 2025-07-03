@@ -1,7 +1,5 @@
 package io.github.remmerw.asen.cert
 
-import com.ionspin.kotlin.bignum.integer.BigInteger
-
 
 class ASN1RelativeOID(contents: ByteArray) : ASN1Primitive() {
     private val identifier: String
@@ -10,45 +8,27 @@ class ASN1RelativeOID(contents: ByteArray) : ASN1Primitive() {
     init {
         val objId = StringBuilder()
         var value: Long = 0
-        var bigValue: BigInteger? = null
+
         var first = true
 
         for (i in contents.indices) {
             val b = contents[i].toInt() and 0xff
 
-            if (value <= LONG_LIMIT) {
-                value += (b and 0x7F).toLong()
-                if ((b and 0x80) == 0) {
-                    if (first) {
-                        first = false
-                    } else {
-                        objId.append('.')
-                    }
-
-                    objId.append(value)
-                    value = 0
+            require(value <= LONG_LIMIT) { "out of supported range" }
+            value += (b and 0x7F).toLong()
+            if ((b and 0x80) == 0) {
+                if (first) {
+                    first = false
                 } else {
-                    value = value shl 7
+                    objId.append('.')
                 }
+
+                objId.append(value)
+                value = 0
             } else {
-                if (bigValue == null) {
-                    bigValue = BigInteger(value)
-                }
-                bigValue = bigValue.or(BigInteger((b and 0x7F).toLong()))
-                if ((b and 0x80) == 0) {
-                    if (first) {
-                        first = false
-                    } else {
-                        objId.append('.')
-                    }
-
-                    objId.append(bigValue)
-                    bigValue = null
-                    value = 0
-                } else {
-                    bigValue = bigValue.shl(7)
-                }
+                value = value shl 7
             }
+
         }
 
         this.identifier = objId.toString()

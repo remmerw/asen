@@ -19,14 +19,15 @@ import io.github.remmerw.asen.cert.X509v3CertificateBuilder
 import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.sign
-import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 
 // The libp2p handshake uses TLS 1.3 (and higher). Endpoints MUST NOT negotiate lower TLS versions.
@@ -81,7 +82,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 // the client can already send application data. If certificate verification fails on
 // the server side, the server will close the connection without processing any data that
 // the client sent.
-@OptIn(ExperimentalEncodingApi::class)
+@OptIn(ExperimentalEncodingApi::class, ExperimentalTime::class)
 internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.quic.Certificate {
 
 
@@ -176,8 +177,6 @@ internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.quic.Certif
         cert, pubKey, key,
         SignatureScheme.ECDSA_SECP256R1_SHA256
     )
-
-    // return null // todo Certificate(cert.encoded(), key, "SHA256withECDSA")
 }
 
 class SignedKey internal constructor(pubKey: ByteArray, signature: ByteArray) : ASN1Object() {

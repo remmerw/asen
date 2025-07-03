@@ -1,6 +1,5 @@
 package io.github.remmerw.asen.cert
 
-import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
@@ -57,22 +56,6 @@ fun writeField(out: Buffer, value: Long) {
         result[--pos] = (fieldValue.toInt() or 0x80).toByte()
     }
     out.write(result, pos, 9)
-}
-
-fun writeField(out: Buffer, fieldValue: BigInteger) {
-    val byteCount = (fieldValue.bitLength() + 6) / 7
-    if (byteCount == 0) {
-        out.writeByte(0)
-    } else {
-        var tmpValue = fieldValue
-        val tmp = ByteArray(byteCount)
-        for (i in byteCount - 1 downTo 0) {
-            tmp[i] = (tmpValue.intValue() or 0x80).toByte()
-            tmpValue = tmpValue.shr(7)
-        }
-        tmp[byteCount - 1] = (tmp[byteCount - 1].toInt() and 0x7F).toByte()
-        out.write(tmp, 0, tmp.size)
-    }
 }
 
 fun getLengthOfDL(value: Int): Int {
