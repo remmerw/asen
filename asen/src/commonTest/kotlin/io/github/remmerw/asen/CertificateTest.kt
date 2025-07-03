@@ -6,7 +6,7 @@ import kotlin.test.Test
 class CertificateTest {
 
     @Test
-    fun createCertificate(){
+    fun createCertificate() {
         val keys = generateKeys()
         val cert = generateCertificate(keys)
         checkNotNull(cert)

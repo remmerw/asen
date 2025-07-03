@@ -535,6 +535,7 @@ private val oids: Map<ASN1ObjectIdentifier, String> = mapOf(
  * @return a string representation of the name.
  */
 
+@Suppress("unused")
 fun getAlgorithmName(algorithmIdentifier: AlgorithmIdentifier): String? {
     if (oids.containsKey(algorithmIdentifier.algorithm)) {
         return oids[algorithmIdentifier.algorithm]

@@ -1,6 +1,6 @@
 package io.github.remmerw.asen.quic
 
-// todo should be replace with a real implementation of a library
+// TODO remove when found a suitable library
 data class X509Certificate(val data: ByteArray) {
 
     companion object {
