@@ -82,6 +82,7 @@ class Examples {
 
         bob.reservations().forEach { relay ->
             val alice = newAsen()
+
             val addresses = alice.resolveAddresses(relay, bob.peerId())
 
             // testing

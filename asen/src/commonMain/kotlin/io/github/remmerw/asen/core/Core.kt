@@ -25,6 +25,7 @@ import dev.whyoleg.cryptography.bigint.toBigInt
 import io.github.remmerw.asen.Asen
 import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
+import io.github.remmerw.asen.MIXED_MODE
 import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV4
@@ -42,7 +43,6 @@ import io.github.remmerw.asen.sign
 import io.github.remmerw.frey.DnsResolver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
@@ -511,24 +511,35 @@ suspend fun observedAddress(asen: Asen): ByteArray? {
     val address: AtomicReference<ByteArray?> = AtomicReference(null)
     val addresses = resolveAddresses() // this you can trust
 
-    try {
-        coroutineScope {
-            val scope = this
 
-            // first ipv6 then ipv4 (after the sorting)
-            addresses.sorted().forEach { peeraddr ->
-                scope.launch {
-                    val observed = observedAddress(asen, peeraddr)
-                    if (observed != null) {
-                        address.store(observed)
-                        scope.cancel()
+    coroutineScope {
+        // first ipv6 then ipv4 (after the sorting)
+        try {
+            if (MIXED_MODE) {
+                addresses.sorted().forEach { peeraddr ->
+                    launch {
+                        val observed = observedAddress(asen, peeraddr)
+                        if (observed != null) {
+                            address.store(observed)
+                            coroutineContext.cancelChildren()
+                        }
+                    }
+                }
+            } else {
+                addresses.filter { peeraddr -> peeraddr.inet6() }.forEach { peeraddr ->
+                    launch {
+                        val observed = observedAddress(asen, peeraddr)
+                        if (observed != null && observed.size == 16) { // 16 is ipv6
+                            address.store(observed)
+                            coroutineContext.cancelChildren()
+                        }
                     }
                 }
             }
+        } catch (_: Throwable) {
         }
-        // then IPv4
-    } catch (_: Throwable) {
     }
+
     return address.load()
 }
 

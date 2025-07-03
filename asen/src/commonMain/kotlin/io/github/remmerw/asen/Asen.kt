@@ -13,8 +13,8 @@ import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.doReservations
 import io.github.remmerw.asen.core.hopRequest
 import io.github.remmerw.asen.core.newSignature
-import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.observedAddress
+import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
@@ -34,7 +34,7 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.random.Random
 
-
+internal const val MIXED_MODE = true
 internal const val DHT_ALPHA: Int = 30
 internal const val DHT_CONCURRENCY: Int = 5
 internal const val TIMEOUT: Int = 5 // in seconds
@@ -80,9 +80,12 @@ class Asen internal constructor(
         try {
             connection = connect(this, relay)
             return connectHop(connection, target, signatureMessage)
+        } catch (throwable: Throwable){
+            debug("Error message " + throwable.message)
         } finally {
             connection?.close()
         }
+        return emptyList()
     }
 
     /**
@@ -240,14 +243,15 @@ class MemoryPeers : PeerStore {
 fun bootstrap(): List<Peeraddr> {
     // "/ip4/104.131.131.82/udp/4001/quic/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ"
     val peeraddrs = mutableListOf<Peeraddr>()
-
-    peeraddrs.add(
-        createPeeraddr(
-            "QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
-            byteArrayOf(104.toByte(), 131.toByte(), 131.toByte(), 82.toByte()),
-            4001.toUShort()
+    if(MIXED_MODE) {
+        peeraddrs.add(
+            createPeeraddr(
+                "QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
+                byteArrayOf(104.toByte(), 131.toByte(), 131.toByte(), 82.toByte()),
+                4001.toUShort()
+            )
         )
-    )
+    }
     return peeraddrs
 }
 
@@ -518,7 +522,16 @@ private fun readPart(code: Int, cis: Buffer): Any? {
         val sizeForAddress = sizeForAddress(code, cis)
         when (code) {
             IP4, IP6 -> {
-                return cis.readByteArray(sizeForAddress)
+                val address = cis.readByteArray(sizeForAddress)
+                return if (MIXED_MODE) {
+                    address
+                } else {
+                    if (address.size == 4) { // only ipv4
+                        address
+                    } else {
+                        null
+                    }
+                }
             }
 
             UDP -> {
