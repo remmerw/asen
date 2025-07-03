@@ -195,7 +195,7 @@ class UtilsTest {
     fun peerStoreTest() {
         val port = 4001
         val random = TestEnv.randomPeerId()
-        val address = byteArrayOf(0, 0, 0, 0, 0, 0, 0, 1) // ipv6
+        val address = AddressUtil.textToNumericFormatV6("::1")!!
         val publicAddresses = listOf(Peeraddr(random, address, port.toUShort()))
 
         publicAddresses.forEach { peeraddr ->
