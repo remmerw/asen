@@ -5,6 +5,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.time.measureTime
 
 class ObservedTest {
@@ -14,16 +15,17 @@ class ObservedTest {
 
         val duration = measureTime {
             val server = newAsen()
-            val address = server.observedAddress()
-            assertNotNull(address)
 
-            val peeraddr = Peeraddr(server.peerId(), address, 1234.toUShort())
-            assertNotNull(peeraddr)
+            val addresses = server.observedAddresses()
+            assertTrue(addresses.isNotEmpty())
 
-            println("Address " + peeraddr.hostname())
-            if (peeraddr.inet4()) {
-                println("Warning only IPv4 address")
+            addresses.forEach { entry ->
+                val peeraddr = Peeraddr(server.peerId(), entry, 1234.toUShort())
+                assertNotNull(peeraddr)
+
+                println("Address " + peeraddr.hostname())
             }
+
             server.shutdown()
         }
         println("Time public addressed " + duration.inWholeMilliseconds + " [ms]")

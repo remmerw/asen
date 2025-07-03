@@ -13,7 +13,7 @@ import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.doReservations
 import io.github.remmerw.asen.core.hopRequest
 import io.github.remmerw.asen.core.newSignature
-import io.github.remmerw.asen.core.observedAddress
+import io.github.remmerw.asen.core.observedAddresses
 import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
@@ -60,11 +60,10 @@ class Asen internal constructor(
     private val mutex = Mutex()
 
     /**
-     * This function tries to evaluate its own IP address
-     * (public IPv6 addresses are in favour of IPv4)
+     * This function tries to evaluate its own IP addresses by asking other peers (ipv4 and ipv6)
      */
-    suspend fun observedAddress(): ByteArray? {
-        return observedAddress(this)
+    suspend fun observedAddresses(): Set<ByteArray> {
+        return observedAddresses(this)
     }
 
     /**

@@ -41,6 +41,7 @@ import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.asen.quic.StreamState
 import io.github.remmerw.asen.sign
 import io.github.remmerw.frey.DnsResolver
+import io.ktor.util.collections.ConcurrentSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
@@ -59,7 +60,6 @@ import kotlinx.datetime.plus
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlin.concurrent.atomics.AtomicInt
-import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.experimental.xor
@@ -521,37 +521,27 @@ internal suspend fun resolveAddresses(): Set<Peeraddr> {
 
 
 @OptIn(ExperimentalAtomicApi::class)
-suspend fun observedAddress(asen: Asen): ByteArray? {
+suspend fun observedAddresses(asen: Asen): Set<ByteArray> = coroutineScope {
 
-    val address: AtomicReference<ByteArray?> = AtomicReference(null)
+    val result: MutableSet<ByteArray> = ConcurrentSet()
     val addresses = resolveAddresses() // this you can trust
 
-
-    coroutineScope {
-        val scope = coroutineContext
-        // first ipv6 then ipv4 (after the sorting)
-        try {
-            addresses.sorted().forEach { peeraddr ->
-                launch {
-                    val observed = observedAddress(asen, peeraddr)
-                    if (observed != null) {
-                        if (MIXED_MODE) {
-                            address.store(observed)
-                            scope.cancelChildren()
-                        } else {
-                            if (observed.size == 16) { // 16 is ipv6
-                                address.store(observed)
-                                scope.cancelChildren()
-                            }
-                        }
+    addresses.forEach { peeraddr ->
+        launch {
+            val observed = observedAddress(asen, peeraddr)
+            if (observed != null) {
+                if (MIXED_MODE) {
+                    result.add(observed)
+                } else {
+                    if (observed.size == 16) { // 16 is ipv6
+                        result.add(observed)
                     }
                 }
             }
-        } catch (_: Throwable) {
         }
     }
 
-    return address.load()
+    result
 }
 
 

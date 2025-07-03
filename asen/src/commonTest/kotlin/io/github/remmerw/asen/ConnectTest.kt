@@ -44,11 +44,12 @@ class ConnectTest {
     fun testIdentify(): Unit = runBlocking(Dispatchers.IO) {
 
         val server = newAsen()
-        val address = server.observedAddress()!!
+        val addresses = server.observedAddresses()
+        assertTrue(addresses.isNotEmpty())
 
         val publicAddresses = listOf(
             Peeraddr(
-                server.peerId(), address, 5001.toUShort()
+                server.peerId(), addresses.first(), 5001.toUShort()
             )
         )
         server.makeReservations(publicAddresses, 25, 120)

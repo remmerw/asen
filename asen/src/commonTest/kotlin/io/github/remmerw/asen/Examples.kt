@@ -16,8 +16,8 @@ class Examples {
         val bob = newAsen()
         val alice = newAsen()
 
-        val observerAddress = bob.observedAddress()
-        assertNotNull(observerAddress, "Observer Address not defined")
+        val observerAddresses = bob.observedAddresses()
+        assertTrue(observerAddresses.isNotEmpty(), "Observer Addresses not defined")
 
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
@@ -26,7 +26,7 @@ class Examples {
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                observerAddress,
+                observerAddresses.first(),
                 5001.toUShort()
             )
         )
@@ -62,8 +62,8 @@ class Examples {
 
         val bob = newAsen()
 
-        val observerAddress = bob.observedAddress()
-        assertNotNull(observerAddress, "Observer Address not defined")
+        val observerAddresses = bob.observedAddresses()
+        assertTrue(observerAddresses.isNotEmpty(), "Observer Addresses not defined")
 
 
         val publicAddresses = listOf(
@@ -71,7 +71,7 @@ class Examples {
             // artificial address where the "data" server of bob is running
             Peeraddr(
                 bob.peerId(),
-                observerAddress,
+                observerAddresses.first(),
                 5001.toUShort()
             )
         )
