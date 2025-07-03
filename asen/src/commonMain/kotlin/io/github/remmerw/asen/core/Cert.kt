@@ -28,15 +28,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 
-private val EXTENSION_PREFIX = intArrayOf(1, 3, 6, 1, 4, 1, 53594)
-private val PREFIXED_EXTENSION_ID = getPrefixedExtensionID(intArrayOf(1, 1))
-
-
-private fun getPrefixedExtensionID(suffix: IntArray): IntArray {
-    return concat(EXTENSION_PREFIX, suffix)
-}
-
-
 // The libp2p handshake uses TLS 1.3 (and higher). Endpoints MUST NOT negotiate lower TLS versions.
 //
 // During the handshake, peers authenticate each other’s identity as described in Peer
@@ -48,12 +39,9 @@ private fun getPrefixedExtensionID(suffix: IntArray): IntArray {
 // When negotiating the usage of this handshake dynamically, via a protocol agreement mechanism
 // like multistream-select 1.0, it MUST be identified with the following protocol ID: /tls/1.0.0
 //
-// [-> done see Connection.remoteCertificate() and the usage]
-//
 // In order to be able to use arbitrary key types, peers don’t use their host key to sign the
 // X.509 certificate they send during the handshake. Instead, the host key is encoded into the
 // libp2p Public Key Extension, which is carried in a self-signed certificate.
-// [-> done see createCertificate]
 //
 // The key used to generate and sign this certificate SHOULD NOT be related to the host's key.
 // Endpoints MAY generate a new key and certificate for every connection attempt, or they MAY
@@ -75,19 +63,12 @@ private fun getPrefixedExtensionID(suffix: IntArray): IntArray {
 // presented certificate is not yet valid, OR (b) if it is expired. Endpoints MUST abort
 // the connection attempt if more than one certificate is received, or if the certificate’s
 // self-signature is not valid.
-// [-> LiteCertificate.validCertificate used in LiteTrust: checks "cert.checkValidity()"
-// which cover (a) and (b)]
-// [-> LiteTrust.checkServerTrusted and LiteTrust.checkClientTrusted checks number of
-// certificates and aborts]
-// [-> LiteCertificate.validCertificate used in LiteTrust: checks
-// "cert.verify(cert.getPublicKey())" if self-signature is valid]
 //
 // The certificate MUST contain the libp2p Public Key Extension. If this extension is
 // missing, endpoints MUST abort the connection attempt. This extension MAY be marked
 // critical. The certificate MAY contain other extensions. Implementations MUST ignore
 // non-critical extensions with unknown OIDs. Endpoints MUST abort the connection attempt
 // if the certificate contains critical extensions that the endpoint does not understand.
-// [-> LiteCertificate.validCertificate used in LiteTrust: both checks done]
 //
 // Certificates MUST omit the deprecated subjectUniqueId and issuerUniqueId fields.
 // Endpoints MAY abort the connection attempt if either is present.
@@ -99,9 +80,8 @@ private fun getPrefixedExtensionID(suffix: IntArray): IntArray {
 // the client can already send application data. If certificate verification fails on
 // the server side, the server will close the connection without processing any data that
 // the client sent.
-// [-> done see Connection.remoteCertificate() and the usage]
 @OptIn(ExperimentalEncodingApi::class)
-internal fun createCertificateNott(keys: Keys): io.github.remmerw.asen.cert.Certificate {
+internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.cert.Certificate {
 
 
     val now: Instant = Clock.System.now()
@@ -192,7 +172,7 @@ internal fun createCertificateNott(keys: Keys): io.github.remmerw.asen.cert.Cert
         .build("SHA256withECDSA", key)
 
 
-   // return null // todo Certificate(cert.encoded(), key, "SHA256withECDSA")
+    // return null // todo Certificate(cert.encoded(), key, "SHA256withECDSA")
 }
 
 class SignedKey internal constructor(pubKey: ByteArray, signature: ByteArray) : ASN1Object() {
