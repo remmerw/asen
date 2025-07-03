@@ -49,7 +49,7 @@ class ASN1ObjectIdentifier : ASN1Primitive {
         }
 
         this.id = objId.toString()
-        this.contents = cloneArray(contents)
+        this.contents = contents.copyOf()
     }
 
     /**

@@ -11,7 +11,7 @@ class ASN1Enumerated private constructor(contents: ByteArray) : ASN1Primitive() 
         require(!ASN1Integer.isMalformed(contents)) { "malformed enumerated" }
         require(0 == (contents[0].toInt() and 0x80)) { "enumerated must be non-negative" }
 
-        this.contents = cloneArray(contents)
+        this.contents = contents.copyOf()
     }
 
     override fun encodeConstructed(): Boolean {

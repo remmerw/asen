@@ -135,7 +135,7 @@ abstract class ASN1Set : ASN1Primitive {
      */
     internal constructor(elements: Array<ASN1Encodable>) {
 
-        val tmp = elements.clone()
+        val tmp = elements.copyOf()
         if (tmp.size >= 2) {
             sort(tmp)
         }
@@ -164,7 +164,7 @@ abstract class ASN1Set : ASN1Primitive {
         if (isSorted) {
             tmp = elements
         } else {
-            tmp = elements.clone()
+            tmp = elements.copyOf()
             sort(tmp)
         }
 

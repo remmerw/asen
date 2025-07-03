@@ -708,11 +708,6 @@ fun hashArrayCode(data: ByteArray?): Int {
 }
 
 
-fun cloneArray(data: ByteArray): ByteArray {
-    return data.clone()
-}
-
-
 fun prepend(a: ByteArray?, b: Byte): ByteArray {
     if (a == null) {
         return byteArrayOf(b)

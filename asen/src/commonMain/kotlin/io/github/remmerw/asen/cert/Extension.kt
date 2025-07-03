@@ -21,7 +21,7 @@ class Extension : ASN1Object {
         value: ByteArray
     ) : this(
         extnId, critical, DEROctetString(
-            cloneArray(value)
+            value.copyOf()
         )
     )
 

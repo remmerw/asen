@@ -31,7 +31,7 @@ class ASN1EncodableVector {
 
     fun takeElements(): Array<ASN1Encodable> {
 
-        return elements.toTypedArray().clone()
+        return elements.toTypedArray().copyOf()
     }
 
 

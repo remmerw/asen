@@ -25,7 +25,7 @@ class X500Name : ASN1Object, ASN1Choice {
     }
 
     internal constructor(vals: Array<ASN1Encodable>) {
-        this.rdns = vals.clone()
+        this.rdns = vals.copyOf()
         this.rdnSeq = DERSequence(this.rdns)
     }
 
@@ -35,7 +35,7 @@ class X500Name : ASN1Object, ASN1Choice {
          *
          * @return an array of RDN objects.
          */
-        return rdns.clone()
+        return rdns.copyOf()
     }
 
     override fun toASN1Primitive(): ASN1Primitive {

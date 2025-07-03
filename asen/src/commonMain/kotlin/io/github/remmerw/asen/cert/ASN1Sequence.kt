@@ -91,8 +91,7 @@ abstract class ASN1Sequence : ASN1Primitive {
      */
     internal constructor(elements: Array<ASN1Encodable>) {
 
-        //ASN1EncodableVector.cloneElements(elements)
-        this.elements = elements.clone()
+        this.elements = elements.copyOf()
     }
 
     fun toArrayInternal(): Array<ASN1Encodable> {

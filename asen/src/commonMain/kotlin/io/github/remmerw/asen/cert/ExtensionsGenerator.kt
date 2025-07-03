@@ -66,7 +66,7 @@ class ExtensionsGenerator {
             extOrdering.add(oid)
             extensions[oid] = Extension(
                 oid, critical,
-                DEROctetString(cloneArray(value))
+                DEROctetString(value.copyOf())
             )
         }
     }
