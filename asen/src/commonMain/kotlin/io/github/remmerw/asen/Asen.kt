@@ -274,7 +274,6 @@ data class Address(val bytes: ByteArray) {
         return bytes.contentEquals(other.bytes)
     }
 
-
     override fun hashCode(): Int {
         return bytes.contentHashCode()
     }
