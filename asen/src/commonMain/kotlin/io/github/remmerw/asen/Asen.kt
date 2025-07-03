@@ -34,7 +34,7 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.random.Random
 
-internal const val MIXED_MODE = false
+internal const val MIXED_MODE = true
 internal const val DHT_ALPHA: Int = 30
 internal const val DHT_CONCURRENCY: Int = 5
 internal const val TIMEOUT: Int = 5 // in seconds
