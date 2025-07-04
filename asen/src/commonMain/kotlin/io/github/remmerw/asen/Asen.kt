@@ -43,6 +43,14 @@ val LIBP2P_CERTIFICATE_EXTENSION: String = prefixToString()
 
 expect fun createInetSocketAddress(address: ByteArray, port: Int): InetSocketAddress
 
+fun hostname(peeraddr: Peeraddr): String {
+    val isa = createInetSocketAddress(
+        peeraddr.address.bytes,
+        peeraddr.port.toInt()
+    )
+    return isa.hostname
+}
+
 interface PeerStore {
     suspend fun peeraddrs(limit: Int): List<Peeraddr>
 
@@ -277,10 +285,6 @@ data class Address(val bytes: ByteArray) {
 
     override fun hashCode(): Int {
         return bytes.contentHashCode()
-    }
-
-    fun hostname(): String {
-        return io.github.remmerw.asen.core.hostname(bytes)
     }
 
     fun inet4(): Boolean {

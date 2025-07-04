@@ -101,7 +101,7 @@ class Examples {
                 val address = addresses.first()
                 assertEquals(address.peerId, bob.peerId())
             } else {
-                println("Shitty relay " + relay.address.hostname())
+                println("Shitty relay " + hostname(relay))
             }
 
             alice.shutdown()
