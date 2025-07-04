@@ -172,12 +172,13 @@ class Asen internal constructor(
 
     suspend fun shutdown() {
         try {
-            selectorManager.close()
+            connector.shutdown()
         } catch (throwable: Throwable) {
             debug(throwable)
         }
+
         try {
-            connector.shutdown()
+            selectorManager.close()
         } catch (throwable: Throwable) {
             debug(throwable)
         }
