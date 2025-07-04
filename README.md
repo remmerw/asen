@@ -158,22 +158,22 @@ interface PeerStore {
 }
 ```
 
-### Find Peer
+### Resolve Peeraddrs
 
-This section describes how to find a peer via relays in a **libp2p2** network.
+This section describes how to resolve a peer addresses via relays in a **libp2p2** network.
 
-To find a peer the ID of the peer is required (peerId). A peerId is a a 32 bit Ed25519 public key,
-which will also be used for signing content and authentication.
+To resolve the peer addresses the ID of the peer is required (peerId). A peerId is a a 32 bit 
+Ed25519 public key, which will also be used for signing content and authentication.
 
 ```
     /**
-     * Find the peer addresses of given target peer ID via the **libp2p** relay mechanism.
+     * Resolve the peer addresses of given target peer ID via the **libp2p** relay mechanism.
      *
-     * @param target the target peer ID which addresses should be retrieved
+     * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
      * @return list of the peer addresses (usually one IPv6 address)
      */
-     suspend fun findPeer(target: PeerId, timeout: Long): List<Peeraddr> {
+    suspend fun resolveAddresses(target: PeerId, timeout: Long): List<Peeraddr> {
          ...
     }
 ```

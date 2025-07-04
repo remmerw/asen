@@ -70,7 +70,7 @@ class Asen internal constructor(
      * Resolve the peer addresses with given target peer ID and a relay address.
      *
      * @param relay address of the relay which should be used to a relayed connection
-     * @param target the target peer ID which addresses should be retrieved
+     * @param target the target peer ID which addresses should be resolved
 
      * @return list of the peer addresses (usually one IPv6 address)
      */
@@ -92,7 +92,7 @@ class Asen internal constructor(
     /**
      * Resolve the peer addresses of given target peer ID via the **libp2p** relay mechanism.
      *
-     * @param target the target peer ID which addresses should be retrieved
+     * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
      * @return list of the peer addresses (usually one IPv6 address)
      */
