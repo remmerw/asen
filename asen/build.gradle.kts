@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.remmerw"
-version = "0.3.3"
+version = "0.3.4"
 
 kotlin {
 
@@ -49,7 +49,7 @@ kotlin {
                 implementation(libs.curve25519) // TODO replace in the future
 
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.0")
-                implementation("io.github.remmerw:frey:0.0.1")
+                implementation("io.github.remmerw:frey:0.0.2")
             }
         }
 
