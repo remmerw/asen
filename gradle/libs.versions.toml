@@ -5,7 +5,6 @@ ktor = "3.2.1"
 kotlinxSerializationProtobuf = "1.9.0"
 cryptographyCore = "0.5.0"
 hmacSha2 = "0.7.0"
-curve25519 = "0.0.8"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -17,7 +16,6 @@ cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", ver
 cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version.ref = "cryptographyCore" }
 cryptography-provider-apple = { module = "dev.whyoleg.cryptography:cryptography-provider-apple", version.ref = "cryptographyCore" }
 hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version.ref = "hmacSha2" }
-curve25519 = { module = "io.github.andreypfau:curve25519-kotlin", version.ref = "curve25519" }
 
 
 [plugins]
