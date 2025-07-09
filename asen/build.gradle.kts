@@ -26,9 +26,9 @@ kotlin {
     }
 
     jvm()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    // iosX64()
+    // iosArm64()
+    // iosSimulatorArm64()
     // linuxArm64()
     // linuxX64()
     // linuxArm64()
@@ -46,10 +46,10 @@ kotlin {
                 implementation(libs.cryptography.bigint)
                 implementation(libs.hmac.sha2)
 
-                implementation(libs.curve25519) // TODO replace in the future
 
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.0")
                 implementation("io.github.remmerw:frey:0.0.2")
+                implementation("io.github.remmerw:borr:0.0.2")
             }
         }
 

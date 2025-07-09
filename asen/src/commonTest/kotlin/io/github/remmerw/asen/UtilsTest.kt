@@ -1,6 +1,5 @@
 package io.github.remmerw.asen
 
-import io.github.andreypfau.curve25519.ed25519.Ed25519
 import io.github.remmerw.asen.core.AddressUtil
 import io.github.remmerw.asen.core.BYTES_EMPTY
 import io.github.remmerw.asen.core.HopMessage
@@ -16,8 +15,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -117,46 +114,6 @@ class UtilsTest {
 
         val distCmp = keyDistance(a, r1)
         assertNotEquals(distCmp.toLong(), 0L)
-    }
-
-
-    @OptIn(ExperimentalEncodingApi::class)
-    @Test
-    fun ed25519() {
-        val keys = generateKeys()
-
-        val peerId = keys.peerId
-
-        val msg = "moin moin".encodeToByteArray()
-        val signature = sign(keys, msg)
-
-
-        val privateKeyAsString = Base64.encode(keys.privateKey)
-        assertNotNull(privateKeyAsString)
-        val publicKeyAsString = Base64.encode(keys.peerId.hash)
-        assertNotNull(publicKeyAsString)
-
-
-        val privateKey = Base64.decode(privateKeyAsString)
-        assertNotNull(privateKey)
-
-        val edPrivateKey = Ed25519.keyFromSeed(privateKey)
-        assertNotNull(edPrivateKey)
-
-        val publicKey = Base64.decode(publicKeyAsString)
-
-        val peerIdCmp = PeerId(publicKey)
-
-        assertEquals(peerId, peerIdCmp)
-
-        assertTrue(edPrivateKey.publicKey().toByteArray().contentEquals(peerId.hash))
-
-        verify(peerIdCmp, msg, signature)
-
-        val storedKeys = generateKeys(privateKey)
-        assertTrue(keys.privateKey.contentEquals(storedKeys.privateKey))
-        assertEquals(keys.peerId, storedKeys.peerId)
-
     }
 
 
