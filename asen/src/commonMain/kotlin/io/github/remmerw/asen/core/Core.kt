@@ -435,8 +435,10 @@ private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean
 
 
 private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): Address? {
-    val connection: Connection = connect(asen, peeraddr)
+    var connection: Connection? = null
     try {
+        connection = connect(asen, peeraddr)
+
         asen.peerStore().store(peeraddr)
         val info = identify(connection)
         if (info.observedAddress != null) {
@@ -448,9 +450,13 @@ private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): Address? {
                 return observed.address
             }
         }
+
+    } catch (throwable: Throwable) {
+        debug("Error message " + throwable.message)
     } finally {
-        connection.close()
+        connection?.close()
     }
+
     return null
 }
 
