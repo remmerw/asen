@@ -10,6 +10,7 @@ import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.doReservations
 import io.github.remmerw.asen.core.hopRequest
+import io.github.remmerw.asen.core.hostname
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.observedAddresses
 import io.github.remmerw.asen.core.prefixToString
@@ -39,15 +40,10 @@ internal const val DHT_CONCURRENCY: Int = 5
 internal const val TIMEOUT: Int = 5 // in seconds
 val LIBP2P_CERTIFICATE_EXTENSION: String = prefixToString()
 
-expect fun createInetSocketAddress(address: ByteArray, port: Int): InetSocketAddress
-
-fun hostname(peeraddr: Peeraddr): String {
-    val isa = createInetSocketAddress(
-        peeraddr.address.bytes,
-        peeraddr.port.toInt()
-    )
-    return isa.hostname
+fun createInetSocketAddress(address: ByteArray, port: Int): InetSocketAddress {
+    return InetSocketAddress(hostname(address), port)
 }
+
 
 interface PeerStore {
     suspend fun peeraddrs(limit: Int): List<Peeraddr>
@@ -305,6 +301,10 @@ data class Peeraddr(val peerId: PeerId, val address: Address, val port: UShort) 
         require(port > 0.toUShort() && port <= 65535.toUShort()) {
             "Invalid port: $port"
         }
+    }
+
+    fun hostname() : String {
+        return hostname(address.bytes)
     }
 
     fun encoded(): ByteArray {

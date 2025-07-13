@@ -23,7 +23,7 @@ class ObservedTest {
                 val peeraddr = Peeraddr(server.peerId(), entry, 1234.toUShort())
                 assertNotNull(peeraddr)
 
-                println("Address " + hostname(peeraddr))
+                println("Address " + peeraddr.hostname())
             }
 
             server.shutdown()

@@ -1,5 +1,6 @@
 package io.github.remmerw.asen
 
+import io.github.remmerw.asen.core.hostname
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
@@ -101,7 +102,7 @@ class Examples {
                 val address = addresses.first()
                 assertEquals(address.peerId, bob.peerId())
             } else {
-                println("Shitty relay " + hostname(relay))
+                println("Shitty relay " +  relay.hostname())
             }
 
             alice.shutdown()
