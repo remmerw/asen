@@ -21,6 +21,7 @@ import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.StreamState
 import io.github.remmerw.asen.sign
 import io.github.remmerw.frey.DnsResolver
+import io.github.remmerw.frey.defaultDnsServer
 import io.github.remmerw.frey.defaultDnsServerIpv6
 import io.ktor.util.collections.ConcurrentSet
 import kotlinx.coroutines.CoroutineScope
@@ -285,7 +286,14 @@ internal fun concat(vararg chunks: ByteArray): ByteArray {
 
 internal suspend fun resolveAddresses(): Set<Peeraddr> {
     val addresses: MutableSet<Peeraddr> = mutableSetOf()
-    val dnsResolver = DnsResolver(defaultDnsServerIpv6())
+
+    val dnsServer = if (MIXED_MODE) {
+        defaultDnsServer()
+    } else {
+        defaultDnsServerIpv6()
+    }
+
+    val dnsResolver = DnsResolver(dnsServer)
     resolveAddresses(
         dnsResolver,
         "bootstrap.libp2p.io", mutableSetOf()

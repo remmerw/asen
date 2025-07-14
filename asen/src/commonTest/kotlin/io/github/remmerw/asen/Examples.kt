@@ -1,8 +1,6 @@
 package io.github.remmerw.asen
 
-import io.github.remmerw.asen.core.hostname
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,15 +20,13 @@ class Examples {
 
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
-        val publicAddresses = listOf(
+        val publicAddresses : MutableList<Peeraddr> = mutableListOf()
+        observerAddresses.forEach { address ->
+            publicAddresses.add(Peeraddr(
+                bob.peerId(), address, 5001.toUShort()
+            ))
+        }
 
-            // artificial address where the "data" server of bob is running
-            Peeraddr(
-                bob.peerId(),
-                observerAddresses.first(),
-                5001.toUShort()
-            )
-        )
 
         // Note: bob has a service running on port 5001
         bob.makeReservations(
