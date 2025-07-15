@@ -3,7 +3,6 @@ package io.github.remmerw.asen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -20,13 +19,9 @@ class Examples {
 
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
-        val publicAddresses : MutableList<Peeraddr> = mutableListOf()
-        observerAddresses.forEach { address ->
-            publicAddresses.add(Peeraddr(
-                bob.peerId(), address, 5001.toUShort()
-            ))
+        val publicAddresses = observerAddresses.map { address ->
+            SocketAddress(address.bytes, 5001.toUShort())
         }
-
 
         // Note: bob has a service running on port 5001
         bob.makeReservations(
@@ -46,65 +41,8 @@ class Examples {
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses
         assertTrue(peeraddrs.isNotEmpty())
 
-        val address = peeraddrs.first()
-        assertEquals(address.peerId, bob.peerId())
 
         bob.shutdown()
         alice.shutdown()
-    }
-
-
-    @Test
-    fun resolveDirectAddresses(): Unit = runBlocking(Dispatchers.IO) {
-
-        val bob = newAsen()
-
-        val observerAddresses = bob.observedAddresses()
-        assertTrue(observerAddresses.isNotEmpty(), "Observer Addresses not defined")
-
-
-        val publicAddresses = listOf(
-
-            // artificial address where the "data" server of bob is running
-            Peeraddr(
-                bob.peerId(),
-                observerAddresses.first(),
-                5001.toUShort()
-            )
-        )
-
-        // Note: bob has a service running on port 5001
-        bob.makeReservations(
-            publicAddresses,
-            20,
-            120
-        )  // timeout max 2 min (120 s) or 20 relays
-
-
-        println("Reservations " + bob.numReservations())
-
-        assertTrue(bob.hasReservations())
-
-
-        bob.reservations().forEach { relay ->
-            val alice = newAsen()
-
-            val addresses = alice.resolveAddresses(relay, bob.peerId())
-
-            // testing
-            assertNotNull(addresses) // peeraddrs are the public IP addresses
-
-            if (addresses.isNotEmpty()) {
-                val address = addresses.first()
-                assertEquals(address.peerId, bob.peerId())
-            } else {
-                println("Shitty relay " +  relay.hostname())
-            }
-
-            alice.shutdown()
-        }
-
-        bob.shutdown()
-
     }
 }

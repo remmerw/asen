@@ -43,17 +43,22 @@ suspend fun connect(
     timeout: Int
 ): Connection {
 
-    val address = createInetSocketAddress(
-        peeraddr.address.bytes,
+    val remoteAddress = createInetSocketAddress(
+        peeraddr.address,
         peeraddr.port.toInt()
     )
-
+    val remotePeerId = peeraddr.peerId
     val responder = Responder(protocols)
 
     val clientConnection = ClientConnection(
-        Version.V1, selectorManager, peeraddr, address,
-        listOf(CipherSuite.TLS_AES_128_GCM_SHA256), certificate,
-        responder, connector
+        version = Version.V1,
+        selectorManager = selectorManager,
+        remotePeerId = remotePeerId,
+        remoteAddress = remoteAddress,
+        cipherSuites = listOf(CipherSuite.TLS_AES_128_GCM_SHA256),
+        certificate = certificate,
+        responder = responder,
+        connector = connector
     )
 
     clientConnection.connect(timeout)

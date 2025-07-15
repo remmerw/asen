@@ -1,6 +1,6 @@
 package io.github.remmerw.asen.quic
 
-import io.github.remmerw.asen.Peeraddr
+import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.debug
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
@@ -23,13 +23,13 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 class ClientConnection internal constructor(
     version: Int,
     private val selectorManager: SelectorManager,
-    private val remotePeeraddr: Peeraddr,
+    remotePeerId: PeerId,
     remoteAddress: InetSocketAddress,
     cipherSuites: List<CipherSuite>,
     certificate: Certificate,
     responder: Responder,
     private val connector: Connector
-) : Connection(version, remoteAddress, responder) {
+) : Connection(version, remotePeerId, remoteAddress, responder) {
     private val scope = CoroutineScope(Dispatchers.IO)
     private val tlsEngine: TlsClientEngine
     private val handshakeDone = Semaphore(1, 1)
@@ -136,10 +136,6 @@ class ClientConnection internal constructor(
         tlsEngine.startHandshake()
     }
 
-
-    override fun remotePeeraddr(): Peeraddr {
-        return remotePeeraddr
-    }
 
     private suspend fun abortHandshake() {
         state(State.Failed)

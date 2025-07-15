@@ -1,7 +1,6 @@
 package io.github.remmerw.asen
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -20,7 +19,10 @@ class ObservedTest {
             assertTrue(addresses.isNotEmpty())
 
             addresses.forEach { entry ->
-                val peeraddr = Peeraddr(server.peerId(), entry, 1234.toUShort())
+                val peeraddr = Peeraddr(
+                    server.peerId(), entry.bytes,
+                    1234.toUShort()
+                )
                 assertNotNull(peeraddr)
 
                 println("Address " + peeraddr.hostname())

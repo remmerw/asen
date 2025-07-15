@@ -3,8 +3,6 @@ package io.github.remmerw.asen
 
 import io.github.remmerw.asen.core.Base58
 import io.github.remmerw.asen.core.closestPeers
-import io.github.remmerw.asen.core.connect
-import io.github.remmerw.asen.core.connectHop
 import io.github.remmerw.asen.core.createCertificate
 import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
@@ -16,7 +14,6 @@ import io.github.remmerw.asen.core.observedAddresses
 import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
-import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Connector
 import io.github.remmerw.borr.Ed25519Sign
 import io.github.remmerw.borr.Ed25519Verify
@@ -69,38 +66,15 @@ class Asen internal constructor(
     }
 
     /**
-     * Resolve the peer addresses with given target peer ID and a relay address.
-     *
-     * @param relay address of the relay which should be used to a relayed connection
-     * @param target the target peer ID which addresses should be resolved
-
-     * @return list of the peer addresses (usually one IPv6 address)
-     */
-    suspend fun resolveAddresses(relay: Peeraddr, target: PeerId): List<Peeraddr> {
-        var connection: Connection? = null
-        val signature = newSignature(keys, emptyList())
-        val signatureMessage = relayMessage(signature, emptyList())
-        try {
-            connection = connect(this, relay)
-            return connectHop(connection, target, signatureMessage)
-        } catch (throwable: Throwable) {
-            debug("Error message " + throwable.message)
-        } finally {
-            connection?.close()
-        }
-        return emptyList()
-    }
-
-    /**
-     * Resolve the peer addresses of given target peer ID via the **libp2p** relay mechanism.
+     * Resolve the addresses of given target peer ID via the **libp2p** relay mechanism.
      *
      * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
-     * @return list of the peer addresses (usually one IPv6 address)
+     * @return list of the addresses (usually one IPv6 address)
      */
     @OptIn(ExperimentalAtomicApi::class)
-    suspend fun resolveAddresses(target: PeerId, timeout: Long): List<Peeraddr> {
-        val done = AtomicReference(emptyList<Peeraddr>())
+    suspend fun resolveAddresses(target: PeerId, timeout: Long): List<SocketAddress> {
+        val done = AtomicReference(emptyList<SocketAddress>())
         val signature = newSignature(keys, emptyList())
         val signatureMessage = relayMessage(signature, emptyList())
         val key = createPeerIdKey(target)
@@ -125,18 +99,18 @@ class Asen internal constructor(
      *
      * Note: when a reservation is just happening no further reservation is possible (mutex - protection)
      *
-     * @param peeraddrs the peeraddrs which should be announced to connecting peers via relays
+     * @param addresses the addresses which should be announced via the relays
      * @param maxReservation number of max reservations
      * @param timeout in seconds
      */
     suspend fun makeReservations(
-        peeraddrs: List<Peeraddr>,
+        addresses: List<SocketAddress>,
         maxReservation: Int,
         timeout: Int
     ) {
         if (mutex.tryLock()) {
             try {
-                doReservations(this, peeraddrs, maxReservation, timeout)
+                doReservations(this, addresses, maxReservation, timeout)
             } catch (throwable: Throwable) {
                 debug(throwable)
             } finally {
@@ -146,15 +120,15 @@ class Asen internal constructor(
     }
 
     /**
-     * Returns all currently connected relays as a list of peer addresses
+     * Returns all currently connected relays as a list of addresses
      *
-     * @return list of relay peer addresses
+     * @return list of relay addresses
      */
-    fun reservations(): List<Peeraddr> {
-        val peeraddrs = mutableListOf<Peeraddr>()
+    fun reservations(): List<InetSocketAddress> {
+        val peeraddrs = mutableListOf<InetSocketAddress>()
         for (connection in connector().connections()) {
             if (connection.isMarked()) {
-                peeraddrs.add(connection.remotePeeraddr())
+                peeraddrs.add(connection.remoteAddress())
             }
         }
         return peeraddrs
@@ -288,28 +262,89 @@ data class Address(val bytes: ByteArray) {
     fun inet6(): Boolean {
         return bytes.size == 16
     }
-
-    fun isLanAddress(): Boolean {
-        return io.github.remmerw.asen.core.isLanAddress(bytes)
-    }
-
-
 }
 
-data class Peeraddr(val peerId: PeerId, val address: Address, val port: UShort) {
+data class SocketAddress(val address: ByteArray, val port: UShort) {
     init {
         require(port > 0.toUShort() && port <= 65535.toUShort()) {
             "Invalid port: $port"
         }
     }
 
-    fun hostname() : String {
-        return hostname(address.bytes)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as SocketAddress
+
+        if (!address.contentEquals(other.address)) return false
+        if (port != other.port) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = address.contentHashCode()
+        result = 31 * result + port.hashCode()
+        return result
+    }
+
+    fun toAddress(): Address {
+        return Address(address)
     }
 
     fun encoded(): ByteArray {
-        return io.github.remmerw.asen.core.encoded(address.bytes, port)
+        return io.github.remmerw.asen.core.encoded(address, port)
     }
+}
+
+data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort) {
+    init {
+        require(port > 0.toUShort() && port <= 65535.toUShort()) {
+            "Invalid port: $port"
+        }
+    }
+
+    fun hostname(): String {
+        return hostname(address)
+    }
+
+    fun toSocketAddress(): SocketAddress {
+        return SocketAddress(address, port)
+    }
+
+    fun inet4(): Boolean {
+        return address.size == 4
+    }
+
+    fun inet6(): Boolean {
+        return address.size == 16
+    }
+
+    fun isLanAddress(): Boolean {
+        return io.github.remmerw.asen.core.isLanAddress(address)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Peeraddr
+
+        if (peerId != other.peerId) return false
+        if (!address.contentEquals(other.address)) return false
+        if (port != other.port) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = peerId.hashCode()
+        result = 31 * result + address.contentHashCode()
+        result = 31 * result + port.hashCode()
+        return result
+    }
+
 
 }
 
@@ -392,7 +427,7 @@ fun parsePeerId(raw: ByteArray): PeerId? {
 
 
 fun createPeeraddr(peerId: PeerId, address: ByteArray, port: UShort): Peeraddr {
-    return Peeraddr(peerId, Address(address), port)
+    return Peeraddr(peerId, address, port)
 }
 
 fun createPeeraddr(peerId: String, address: ByteArray, port: UShort): Peeraddr {
@@ -406,6 +441,41 @@ fun decodePeerId(name: String): PeerId { // special libp2p decoding
 
 fun encodePeerId(peerId: PeerId): String {  // special libp2p encoding
     return encode58(multihash(peerId))
+}
+
+fun parseAddress(bytes: ByteArray): SocketAddress? {
+
+    val cis = Buffer()
+    cis.write(bytes)
+
+    var address: ByteArray? = null
+    var port = 0.toUShort()
+    try {
+
+        while (!cis.exhausted()) {
+            val code = readUnsignedVariant(cis)
+
+            if (size(code) == 0) {
+                continue
+            }
+
+            val part = readPart(code, cis) ?: return null
+            if (part is ByteArray) {
+                address = part
+            }
+            if (part is UShort) {
+                port = part
+            }
+        }
+    } catch (_: Throwable) { // should not occur
+        return null
+    }
+
+    // check if address has a port, when it is not a dnsAddr
+    if (port > 0.toUShort() && address != null) {
+        return SocketAddress(address, port)
+    }
+    return null
 }
 
 fun parseAddress(peerId: PeerId, bytes: ByteArray): Peeraddr? {

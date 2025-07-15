@@ -89,7 +89,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             ...
-            implementation("io.github.remmerw:asen:0.3.6")
+            implementation("io.github.remmerw:asen:0.3.7")
         }
         ...
     }
@@ -111,14 +111,12 @@ class.
 val keys : Keys = generateKeys(); // generate new keys 
 
 // bootstrap addresses for the DHT
-val bootstrap = Peeraddrs();
-bootstrap.add(...); // add a valid bootstrap address
+val bootstrap = bootstrap();
 
 val asen = newAsen(keys = keys, bootstrap = bootstrap, blockStore = blockstore)
 
-
 // -> or the shortform, which does the same settings
-val asen = newAsen(bootstrap= bootstrap)
+val asen = newAsen()
 
 
 
@@ -167,13 +165,13 @@ Ed25519 public key, which will also be used for signing content and authenticati
 
 ```
     /**
-     * Resolve the peer addresses of given target peer ID via the **libp2p** relay mechanism.
+     * Resolve the addresses of given target peer ID via the **libp2p** relay mechanism.
      *
      * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
-     * @return list of the peer addresses (usually one IPv6 address)
+     * @return list of the addresses (usually one IPv6 address)
      */
-    suspend fun resolveAddresses(target: PeerId, timeout: Long): List<Peeraddr> {
+     suspend fun resolveAddresses(target: PeerId, timeout: Long): List<SocketAddress> {
          ...
     }
 ```
@@ -188,16 +186,18 @@ Documentation of relays are documented
 under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.md#introduction).
 
 ```
-    /**
-     * Makes a reservation o relay nodes with the purpose that other peers can fin you via
-     * the nodes peerId
+   /**
+     * Makes a reservation to relay nodes with the purpose that other peers can find you via
+     * the its peerId
      *
-     * @param peeraddrs the peeraddrs which should be announced to incoming connecting peers via relays
+     * Note: when a reservation is just happening no further reservation is possible (mutex - protection)
+     *
+     * @param addresses the addresses which should be announced via the relays
      * @param maxReservation number of max reservations
      * @param timeout in seconds
      */
     suspend fun makeReservations(
-        peeraddrs: List<Peeraddr>,
+        addresses: List<SocketAddress>,
         maxReservation: Int,
         timeout: Int
     ) {
@@ -205,11 +205,11 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
     }
     
     /**
-     * Returns all currently connected relays as a list of peer addresses
+     * Returns all currently connected relays as a list of addresses
      *
-     * @return list of relay peer addresses
+     * @return list of relay addresses
      */
-    fun reservations(): Peeraddrs {
+    fun reservations(): List<InetSocketAddress> {
         ...
     }
 
@@ -228,7 +228,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
     @Test
     fun resolveAddresses(): Unit = runBlocking(Dispatchers.IO) {
 
-         val bob = newAsen()
+        val bob = newAsen()
         val alice = newAsen()
 
         val observerAddresses = bob.observedAddresses()
@@ -236,13 +236,9 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
-        val publicAddresses : MutableList<Peeraddr> = mutableListOf()
-        observerAddresses.forEach { address ->
-            publicAddresses.add(Peeraddr(
-                bob.peerId(), address, 5001.toUShort()
-            ))
+        val publicAddresses = observerAddresses.map { address ->
+            SocketAddress(address.bytes, 5001.toUShort())
         }
-
 
         // Note: bob has a service running on port 5001
         bob.makeReservations(
@@ -262,8 +258,6 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses
         assertTrue(peeraddrs.isNotEmpty())
 
-        val address = peeraddrs.first()
-        assertEquals(address.peerId, bob.peerId())
 
         bob.shutdown()
         alice.shutdown()

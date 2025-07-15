@@ -7,7 +7,6 @@ import io.github.remmerw.asen.core.Key
 import io.github.remmerw.asen.core.createDhtPeer
 import io.github.remmerw.asen.core.createKey
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertNotNull

@@ -10,6 +10,7 @@ import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.MIXED_MODE
 import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
+import io.github.remmerw.asen.SocketAddress
 import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV4
 import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV6
 import io.github.remmerw.asen.createPeeraddr
@@ -55,17 +56,12 @@ private val PREFIXED_EXTENSION_ID = getPrefixedExtensionID(intArrayOf(1, 1))
 val BYTES_EMPTY: ByteArray = byteArrayOf()
 
 
-internal fun newSignature(keys: Keys, peeraddrs: List<Peeraddr>): ByteArray {
-    val checkIfValid: MutableSet<PeerId> = mutableSetOf()
+internal fun newSignature(keys: Keys, addresses: List<SocketAddress>): ByteArray {
     var toVerify = BYTES_EMPTY
-    for (peeraddr in peeraddrs) {
-        checkIfValid.add(peeraddr.peerId)
-        val encoded = peeraddr.encoded()
+    for (address in addresses) {
+        val encoded = address.encoded()
         toVerify = concat(toVerify, encoded)
     }
-
-    // only addresses of the same peerId
-    require(checkIfValid.size <= 1) { "Invalid usage" }
 
     return sign(keys, toVerify)
 }
@@ -88,7 +84,7 @@ internal fun reachablePeeraddr(peerIdRaw: ByteArray, addresses: List<ByteArray>)
     if (peerId != null) {
         val peeraddrs = createPeeraddrs(peerId, addresses)
         for (peer in peeraddrs) {
-            if (!peer.address.isLanAddress()) {
+            if (!peer.isLanAddress()) {
                 return peer
             }
         }
@@ -371,7 +367,7 @@ internal fun CoroutineScope.makeReservation(
         ReceiveChannel<Connection> = produce {
     channel.consumeEach { connection ->
         // handled relays with given peerId
-        if (handledRelays.add(connection.remotePeeraddr().peerId)) {
+        if (handledRelays.add(connection.remotePeerId())) {
 
             // add stop handler to connection
             connection.responder().protocols.put(
@@ -392,7 +388,7 @@ internal fun CoroutineScope.makeReservation(
 @OptIn(ExperimentalAtomicApi::class)
 internal suspend fun doReservations(
     asen: Asen,
-    peeraddrs: List<Peeraddr>,
+    addresses: List<SocketAddress>,
     maxReservation: Int,
     timeout: Int
 ) {
@@ -402,11 +398,11 @@ internal suspend fun doReservations(
     // check if reservations are still valid and not expired
     for (connection in asen.connector().connections()) {
         if (connection.isMarked()) {
-            handledRelays.add(connection.remotePeeraddr().peerId) // still valid
+            handledRelays.add(connection.remotePeerId()) // still valid
         }
     }
-    val signature = newSignature(asen.keys(), peeraddrs)
-    val signatureMessage = relayMessage(signature, peeraddrs)
+    val signature = newSignature(asen.keys(), addresses)
+    val signatureMessage = relayMessage(signature, addresses)
     val valid = AtomicInt(handledRelays.size)
 
 
@@ -451,12 +447,9 @@ private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): Address? {
         asen.peerStore().store(peeraddr)
         val info = identify(connection)
         if (info.observedAddress != null) {
-            val observed = parseAddress(
-                asen.peerId(),
-                info.observedAddress
-            )
+            val observed = parseAddress(info.observedAddress)
             if (observed != null) {
-                return observed.address
+                return observed.toAddress()
             }
         }
 

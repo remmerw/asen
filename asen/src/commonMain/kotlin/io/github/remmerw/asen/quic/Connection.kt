@@ -1,6 +1,6 @@
 package io.github.remmerw.asen.quic
 
-import io.github.remmerw.asen.Peeraddr
+import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.debug
 import io.ktor.network.sockets.BoundDatagramSocket
 import io.ktor.network.sockets.Datagram
@@ -21,6 +21,7 @@ import kotlin.time.TimeSource
 
 abstract class Connection(
     version: Int,
+    private val remotePeerId: PeerId,
     private val remoteAddress: InetSocketAddress,
     private val responder: Responder
 ) : ConnectionStreams(version) {
@@ -66,6 +67,10 @@ abstract class Connection(
     init {
         this.flowControlLastAdvertised = flowControlMax
         this.flowControlIncrement = flowControlMax / 10
+    }
+
+    fun remoteAddress(): InetSocketAddress {
+        return remoteAddress
     }
 
     fun responder(): Responder {
@@ -795,7 +800,9 @@ abstract class Connection(
         return packets
     }
 
-    abstract fun remotePeeraddr(): Peeraddr
+    fun remotePeerId(): PeerId {
+        return remotePeerId
+    }
 
 
     enum class State {

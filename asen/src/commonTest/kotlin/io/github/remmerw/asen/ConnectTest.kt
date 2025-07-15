@@ -1,16 +1,12 @@
 package io.github.remmerw.asen
 
 import io.github.remmerw.asen.core.connect
-import io.github.remmerw.asen.core.identify
-import io.github.remmerw.asen.quic.Connection
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -27,8 +23,8 @@ class ConnectTest {
             val peeraddr = createPeeraddr(peerId, address, 4001.toUShort())
             assertEquals(4001.toUShort(), peeraddr.port)
 
-            assertTrue(peeraddr.address.inet4())
-            assertFalse(peeraddr.address.inet6())
+            assertTrue(peeraddr.inet4())
+            assertFalse(peeraddr.inet6())
 
             assertEquals(peeraddr.peerId, peerId)
 
@@ -41,17 +37,15 @@ class ConnectTest {
 
 
     @Test
-    fun testIdentify(): Unit = runBlocking(Dispatchers.IO) {
+    fun testReservations(): Unit = runBlocking(Dispatchers.IO) {
 
         val server = newAsen()
         val addresses = server.observedAddresses()
         assertTrue(addresses.isNotEmpty())
 
-        val publicAddresses = listOf(
-            Peeraddr(
-                server.peerId(), addresses.first(), 5001.toUShort()
-            )
-        )
+        val publicAddresses = addresses.map { address ->
+            SocketAddress(address.bytes, 5001.toUShort())
+        }
         server.makeReservations(publicAddresses, 25, 120)
 
 
@@ -66,29 +60,8 @@ class ConnectTest {
             return@runBlocking
         }
 
-        for (peeraddr in server.reservations()) {
-
-
-            var connection: Connection
-            try {
-                connection = connect(server, peeraddr)
-            } catch (throwable: Throwable) {
-                println(
-                    "Connection failed peeraddr " + throwable.message
-                )
-                continue
-            }
-
-            try {
-                assertNotNull(connection)
-                val info = identify(connection)
-                assertNotNull(info)
-            } catch (throwable: Throwable) {
-                error(throwable)
-            }
-
-            assertNotNull(connection)
-            connection.close()
+        for (address in server.reservations()) {
+            println(address.toString())
         }
         server.shutdown()
     }
