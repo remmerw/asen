@@ -1,5 +1,6 @@
 package io.github.remmerw.asen
 
+import io.github.remmerw.borr.PeerId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.atomics.AtomicReference
@@ -56,8 +57,10 @@ class Examples {
             SocketAddress(address.bytes, 7777.toUShort()) // 7777 alice server
         }
 
-        val peeraddrs = alice.resolveAddresses(bob.peerId(), 120,
-            alicPublicAddresses)  // timeout max 2 min (120 s)
+        val peeraddrs = alice.resolveAddresses(
+            bob.peerId(), 120,
+            alicPublicAddresses
+        )  // timeout max 2 min (120 s)
 
         // testing
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses

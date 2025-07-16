@@ -9,6 +9,7 @@ import io.github.remmerw.asen.core.keyDistance
 import io.github.remmerw.asen.core.readUnsignedVariant
 import io.github.remmerw.asen.core.unsignedVariantSize
 import io.github.remmerw.asen.core.writeUnsignedVariant
+import io.github.remmerw.borr.PeerId
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.Buffer
 import kotlinx.serialization.ExperimentalSerializationApi

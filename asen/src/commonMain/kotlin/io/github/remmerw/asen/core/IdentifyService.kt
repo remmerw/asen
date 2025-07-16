@@ -1,9 +1,9 @@
 package io.github.remmerw.asen.core
 
-import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.TIMEOUT
 import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.quic.Connection
+import io.github.remmerw.borr.PeerId
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf

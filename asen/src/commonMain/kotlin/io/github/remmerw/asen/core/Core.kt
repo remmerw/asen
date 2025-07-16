@@ -6,9 +6,7 @@ import dev.whyoleg.cryptography.bigint.BigInt
 import dev.whyoleg.cryptography.bigint.decodeToBigInt
 import io.github.remmerw.asen.Address
 import io.github.remmerw.asen.Asen
-import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.MIXED_MODE
-import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.SocketAddress
 import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV4
@@ -20,7 +18,9 @@ import io.github.remmerw.asen.parsePeerId
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.StreamState
-import io.github.remmerw.asen.sign
+import io.github.remmerw.borr.Keys
+import io.github.remmerw.borr.PeerId
+import io.github.remmerw.borr.sign
 import io.github.remmerw.frey.DnsResolver
 import io.github.remmerw.frey.defaultDnsServer
 import io.github.remmerw.frey.defaultDnsServerIpv6

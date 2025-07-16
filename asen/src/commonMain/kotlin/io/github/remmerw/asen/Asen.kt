@@ -15,8 +15,9 @@ import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connector
-import io.github.remmerw.borr.Ed25519Sign
-import io.github.remmerw.borr.Ed25519Verify
+import io.github.remmerw.borr.Keys
+import io.github.remmerw.borr.PeerId
+import io.github.remmerw.borr.generateKeys
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 import kotlinx.coroutines.Dispatchers
@@ -371,50 +372,6 @@ data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort
     }
 
 
-}
-
-// hash is always (32 bit) and it is a Ed25519 public key
-data class PeerId(val hash: ByteArray) {
-
-    override fun hashCode(): Int {
-        return hash.contentHashCode() // ok, checked, maybe opt
-    }
-
-    init {
-        require(hash.size == 32) { "hash size must be 32" }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as PeerId
-
-        return hash.contentEquals(other.hash)
-    }
-}
-
-// Note a peerId is always a public key (ed25519)
-@Suppress("ArrayInDataClass")
-data class Keys(val peerId: PeerId, val privateKey: ByteArray)
-
-
-fun generateKeys(): Keys {
-    val keyPair = Ed25519Sign.KeyPair.newKeyPair()
-    return Keys(
-        PeerId(keyPair.getPublicKey()),
-        keyPair.getPrivateKey()
-    )
-}
-
-fun verify(peerId: PeerId, data: ByteArray, signature: ByteArray) { // move to Asen
-    val verifier = Ed25519Verify(peerId.hash)
-    verifier.verify(signature, data)
-}
-
-fun sign(keys: Keys, data: ByteArray): ByteArray { // move to Asen
-    val signer = Ed25519Sign(keys.privateKey)
-    return signer.sign(data)
 }
 
 

@@ -4,7 +4,6 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.EC
 import dev.whyoleg.cryptography.algorithms.ECDSA
 import dev.whyoleg.cryptography.bigint.toBigInt
-import io.github.remmerw.asen.Keys
 import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
 import io.github.remmerw.asen.cert.ASN1Encodable
 import io.github.remmerw.asen.cert.ASN1Object
@@ -18,7 +17,8 @@ import io.github.remmerw.asen.cert.X500Name
 import io.github.remmerw.asen.cert.X509v3CertificateBuilder
 import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.quic.SignatureScheme
-import io.github.remmerw.asen.sign
+import io.github.remmerw.borr.Keys
+import io.github.remmerw.borr.sign
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus

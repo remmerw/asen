@@ -1,11 +1,11 @@
 package io.github.remmerw.asen.core
 
 import io.github.remmerw.asen.HolePunch
-import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.debug
 import io.github.remmerw.asen.parsePeerId
 import io.github.remmerw.asen.quic.Handler
 import io.github.remmerw.asen.quic.Stream
+import io.github.remmerw.borr.PeerId
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray

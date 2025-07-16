@@ -1,6 +1,5 @@
 package io.github.remmerw.asen.core
 
-import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.SocketAddress
 import io.github.remmerw.asen.TIMEOUT
 import io.github.remmerw.asen.debug
@@ -9,7 +8,8 @@ import io.github.remmerw.asen.parseAddress
 import io.github.remmerw.asen.quic.Connection
 import io.github.remmerw.asen.quic.Requester
 import io.github.remmerw.asen.quic.Stream
-import io.github.remmerw.asen.verify
+import io.github.remmerw.borr.PeerId
+import io.github.remmerw.borr.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ReceiveChannel

@@ -1,7 +1,7 @@
 package io.github.remmerw.asen.quic
 
-import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.debug
+import io.github.remmerw.borr.PeerId
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock

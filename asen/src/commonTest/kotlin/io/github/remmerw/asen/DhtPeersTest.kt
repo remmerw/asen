@@ -6,6 +6,7 @@ import io.github.remmerw.asen.core.DhtPeers
 import io.github.remmerw.asen.core.Key
 import io.github.remmerw.asen.core.createDhtPeer
 import io.github.remmerw.asen.core.createKey
+import io.github.remmerw.borr.PeerId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
