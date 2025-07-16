@@ -1,41 +1,38 @@
 package io.github.remmerw.asen.quic
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import io.ktor.util.collections.ConcurrentMap
 import kotlin.concurrent.Volatile
-import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.max
 
 internal class LossDetector(private val connectionFlow: ConnectionFlow) {
-    private val packetSentLog: MutableMap<Long, PacketStatus> = mutableMapOf()
-    private val mutex = Mutex()
+    private val packetSentLog: MutableMap<Long, PacketStatus> = ConcurrentMap()
 
-    @OptIn(ExperimentalAtomicApi::class)
-    private val largestAcked = AtomicLong(-1L)
+    @Volatile
+    private var largestAcked = -1L
 
     @Volatile
     private var isStopped = false
 
-    suspend fun packetSent(packetStatus: PacketStatus) {
+    fun packetSent(packetStatus: PacketStatus) {
         if (isStopped) {
             return
         }
 
         // During a reset operation, no new packets must be logged as sent.
-        mutex.withLock {
-            packetSentLog[packetStatus.packet.packetNumber()] = packetStatus
-        }
+
+        packetSentLog[packetStatus.packet.packetNumber()] = packetStatus
+
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    suspend fun processAckFrameReceived(ackFrame: FrameReceived.AckFrame) {
+    fun processAckFrameReceived(ackFrame: FrameReceived.AckFrame) {
         if (isStopped) {
             return
         }
 
 
-        largestAcked.store(max(largestAcked.load(), ackFrame.largestAcknowledged))
+        largestAcked = max(largestAcked, ackFrame.largestAcknowledged)
 
 
         var newlyAcked: PacketStatus? = null
@@ -48,7 +45,7 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
             i++
             val from = acknowledgedRanges[i]
             for (pn in to downTo from) {
-                val packetStatus = mutex.withLock { packetSentLog.remove(pn) }
+                val packetStatus = packetSentLog.remove(pn)
                 if (packetStatus != null) {
                     if (isAckEliciting(packetStatus.packet)) {
                         connectionFlow.processAckedPacket(packetStatus)
@@ -75,17 +72,17 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
         }
     }
 
-    suspend fun stop() {
+    fun stop() {
         isStopped = true
 
 
-        val packets = mutex.withLock { packetSentLog.values.toList() }
+        val packets = packetSentLog.values.toList()
         packets.forEach { packetStatus ->
             connectionFlow.discardBytesInFlight(packetStatus)
         }
-        mutex.withLock {
-            packetSentLog.clear()
-        }
+
+        packetSentLog.clear()
+
     }
 
     suspend fun detectLostPackets() {
@@ -109,9 +106,8 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
         // "In-flight:  Packets are considered in-flight when they have been sent
         //      and neither acknowledged nor declared lost, and they are not ACK-
         //      only."
-        val packets = mutex.withLock {
-            packetSentLog.values.toList()
-        }
+        val packets = packetSentLog.values.toList()
+
         packets.forEach { packetStatus ->
             if (pnTooOld(packetStatus) || sentTimeTooLongAgo(packetStatus, lossDelay)) {
                 if (!packetStatus.packet.isAckOnly) {
@@ -124,13 +120,12 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
     @OptIn(ExperimentalAtomicApi::class)
     private fun pnTooOld(p: PacketStatus): Boolean {
         val kPacketThreshold = 3
-        return p.packet.packetNumber() <= largestAcked.load() - kPacketThreshold
+        return p.packet.packetNumber() <= largestAcked - kPacketThreshold
     }
 
     @OptIn(ExperimentalAtomicApi::class)
     private fun sentTimeTooLongAgo(p: PacketStatus, lossDelay: Long): Boolean {
-        return p.packet.packetNumber() <= largestAcked.load()
-                && p.timeSent.elapsedNow().inWholeMilliseconds > lossDelay
+        return p.timeSent.elapsedNow().inWholeMilliseconds > lossDelay
     }
 
     private suspend fun declareLost(packetStatus: PacketStatus) {
@@ -163,8 +158,8 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
                 else -> {}
             }
         }
-        mutex.withLock {
-            packetSentLog.remove(packetStatus.packet.packetNumber())
-        }
+
+        packetSentLog.remove(packetStatus.packet.packetNumber())
+
     }
 }

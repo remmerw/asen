@@ -178,7 +178,7 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         return packetAssemblers[level.ordinal]!!
     }
 
-    internal suspend fun packetSent(
+    internal fun packetSent(
         packet: Packet,
         size: Int,
         timeSent: TimeSource.Monotonic.ValueTimeMark
@@ -198,7 +198,7 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         sendRequestQueue(level).appendRequest(frame)
     }
 
-    internal suspend fun process(ackFrame: FrameReceived.AckFrame, level: Level) {
+    internal fun process(ackFrame: FrameReceived.AckFrame, level: Level) {
         ackGenerator(level).ackFrameReceived(ackFrame)
 
         lossDetectors[level.ordinal]!!.processAckFrameReceived(ackFrame)
@@ -490,7 +490,7 @@ open class ConnectionFlow(version: Int) : ConnectionSecrets(version) {
         }
     }
 
-    private suspend fun stopRecovery() {
+    private fun stopRecovery() {
         for (lossDetector in lossDetectors) {
             lossDetector!!.stop()
         }
