@@ -89,7 +89,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             ...
-            implementation("io.github.remmerw:asen:0.3.7")
+            implementation("io.github.remmerw:asen:0.3.8")
         }
         ...
     }
@@ -108,12 +108,21 @@ class.
 
 // generate the default required Ed25519 keys (PeerId and privateKey)
 // Note: a PeerId is a Ed25519 public key 
-val keys : Keys = generateKeys(); // generate new keys 
+val keys = generateKeys() // generate new keys 
 
 // bootstrap addresses for the DHT
-val bootstrap = bootstrap();
+val bootstrap = bootstrap()
 
-val asen = newAsen(keys = keys, bootstrap = bootstrap, blockStore = blockstore)
+// Storage for DHT peers
+val peerStore = MemoryPeers()
+
+// holepunch notification 
+val holePunch = DisabledHolePunch()
+
+val asen = newAsen(keys = keys, 
+    bootstrap = bootstrap, 
+    peerStore = peerStore,
+    holePunch = holePunch)
 
 // -> or the shortform, which does the same settings
 val asen = newAsen()
@@ -128,12 +137,14 @@ val asen = newAsen()
  *
  * @param keys public and private ed25519 keys for the peer ID, signing, verification and authentication
  * @param bootstrap initial bootstrap peers for the DHT (without bootstrap peers it can only be used for testing)
- * @param peerStore additional DHT peers (note the list will be filled and readout)
+ * @param peerStore additional DHT peers (note it will be filled and readout during DHT operations)
+ * @param holePunch Notification for doing hole punching
  */
 fun newAsen(
     keys: Keys = generateKeys(),
     bootstrap: List<Peeraddr> = bootstrap(),
-    peerStore: PeerStore = MemoryPeers()
+    peerStore: PeerStore = MemoryPeers(),
+    holePunch: HolePunch = DisabledHolePunch()
 ): Asen {
 ...
 }
@@ -169,6 +180,8 @@ Ed25519 public key, which will also be used for signing content and authenticati
      *
      * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
+     * @param publicAddresses Own public addresses used for hole punching [Note: default empty
+     * hole punching is deactivated]
      * @return list of the addresses (usually one IPv6 address)
      */
      suspend fun resolveAddresses(target: PeerId, timeout: Long): List<SocketAddress> {

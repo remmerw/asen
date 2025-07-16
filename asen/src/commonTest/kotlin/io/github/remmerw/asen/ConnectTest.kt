@@ -44,6 +44,9 @@ class ConnectTest {
         assertTrue(addresses.isNotEmpty())
 
         val publicAddresses = addresses.map { address ->
+
+            assertTrue(address.inet4() || address.inet6())
+
             SocketAddress(address.bytes, 5001.toUShort())
         }
         server.makeReservations(publicAddresses, 25, 120)

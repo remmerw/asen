@@ -50,8 +50,8 @@ internal data class ConnectRequest(
     override suspend fun data(stream: Stream, data: ByteArray) {
 
         if (stream.isMarked()) {
-            val syncInfo = decodeMessage(target, data)
-            result.addAll(syncInfo)
+            val addresses = decodeMessage(target, data)
+            result.addAll(addresses)
             done.release()
         } else {
 
@@ -70,7 +70,7 @@ internal data class ConnectRequest(
                 return
             }
             initializeConnect(stream)
-            stream.mark()
+            stream.mark(target)
         }
 
     }
@@ -230,7 +230,8 @@ internal fun CoroutineScope.hopRequest(
     }
 }
 
-private fun decodeMessage(peerId: PeerId, data: ByteArray): List<SocketAddress> {
+
+fun decodeMessage(peerId: PeerId, data: ByteArray): List<SocketAddress> {
     val buffer = Buffer()
     buffer.write(data)
 

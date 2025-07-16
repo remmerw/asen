@@ -372,7 +372,7 @@ internal fun CoroutineScope.makeReservation(
             // add stop handler to connection
             connection.responder().protocols.put(
                 RELAY_PROTOCOL_STOP, RelayStopHandler(
-                    asen.peerId(), signatureMessage
+                    asen.holePunch(), asen.peerId(), signatureMessage
                 )
             )
 

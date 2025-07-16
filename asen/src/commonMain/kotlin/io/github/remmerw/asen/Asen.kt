@@ -48,11 +48,25 @@ interface PeerStore {
     suspend fun store(peeraddr: Peeraddr)
 }
 
+class DisabledHolePunch : HolePunch {
+    override fun invoke(
+        peerId: PeerId,
+        addresses: List<SocketAddress>
+    ) {
+        debug("Peer $peerId wants to connect with $addresses")
+    }
+}
+
+interface HolePunch {
+    fun invoke(peerId: PeerId, addresses: List<SocketAddress>)
+}
+
 class Asen internal constructor(
     private val keys: Keys,
     private val certificate: Certificate,
     private val bootstrap: List<Peeraddr>,
-    private val peerStore: PeerStore
+    private val peerStore: PeerStore,
+    private val holePunch: HolePunch
 ) {
     private val selectorManager = SelectorManager(Dispatchers.IO)
     private val connector: Connector = Connector()
@@ -70,13 +84,18 @@ class Asen internal constructor(
      *
      * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
+     * @param publicAddresses Own public addresses used for hole punching [Note: default empty
+     * hole punching is deactivated]
      * @return list of the addresses (usually one IPv6 address)
      */
     @OptIn(ExperimentalAtomicApi::class)
-    suspend fun resolveAddresses(target: PeerId, timeout: Long): List<SocketAddress> {
+    suspend fun resolveAddresses(
+        target: PeerId, timeout: Long,
+        publicAddresses: List<SocketAddress> = emptyList()
+    ): List<SocketAddress> {
         val done = AtomicReference(emptyList<SocketAddress>())
-        val signature = newSignature(keys, emptyList())
-        val signatureMessage = relayMessage(signature, emptyList())
+        val signature = newSignature(keys, publicAddresses)
+        val signatureMessage = relayMessage(signature, publicAddresses)
         val key = createPeerIdKey(target)
 
         withTimeoutOrNull(timeout * 1000L) {
@@ -168,6 +187,10 @@ class Asen internal constructor(
         return bootstrap
     }
 
+    fun holePunch(): HolePunch {
+        return holePunch
+    }
+
     internal fun connector(): Connector {
         return connector
     }
@@ -191,14 +214,16 @@ class Asen internal constructor(
  *
  * @param keys public and private ed25519 keys for the peer ID, signing, verification and authentication
  * @param bootstrap initial bootstrap peers for the DHT (without bootstrap peers it can only be used for testing)
- * @param peerStore additional DHT peers (note the list will be filled and readout)
+ * @param peerStore additional DHT peers (note it will be filled and readout during DHT operations)
+ * @param holePunch Notification for doing hole punching
  */
 fun newAsen(
     keys: Keys = generateKeys(),
     bootstrap: List<Peeraddr> = bootstrap(),
-    peerStore: PeerStore = MemoryPeers()
+    peerStore: PeerStore = MemoryPeers(),
+    holePunch: HolePunch = DisabledHolePunch()
 ): Asen {
-    return Asen(keys, createCertificate(keys), bootstrap, peerStore)
+    return Asen(keys, createCertificate(keys), bootstrap, peerStore, holePunch)
 }
 
 class MemoryPeers : PeerStore {

@@ -1,5 +1,6 @@
 package io.github.remmerw.asen.quic
 
+import io.github.remmerw.asen.PeerId
 import io.github.remmerw.asen.debug
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -22,8 +23,9 @@ class Stream(
     )
     private val receiverMaxDataIncrement: Long
 
-    @OptIn(ExperimentalAtomicApi::class)
-    private val marked = AtomicBoolean(false)
+
+    @Volatile
+    private var marked: PeerId? = null
 
     // not required to be thread safe, only invoked from the receiver thread
     private val frames: MutableList<FrameReceived.StreamFrame> = mutableListOf() // no concurrency
@@ -279,14 +281,16 @@ class Stream(
     }
 
 
-    @OptIn(ExperimentalAtomicApi::class)
-    fun mark() {
-        marked.store(true)
+    fun mark(peerId: PeerId) {
+        marked = peerId
     }
 
-    @OptIn(ExperimentalAtomicApi::class)
+    fun marked(): PeerId? {
+        return marked
+    }
+
     fun isMarked(): Boolean {
-        return marked.load()
+        return marked != null
     }
 
 
