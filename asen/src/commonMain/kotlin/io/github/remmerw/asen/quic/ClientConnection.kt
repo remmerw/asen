@@ -5,6 +5,7 @@ import io.github.remmerw.borr.PeerId
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 import io.ktor.network.sockets.aSocket
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
@@ -27,6 +28,7 @@ class ClientConnection internal constructor(
     private val connector: Connector
 ) : Connection(version, remotePeerId, remoteAddress, responder) {
     private val selectorManager: SelectorManager = SelectorManager(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.IO)
     private val tlsEngine: TlsClientEngine
     private val handshakeDone = Semaphore(1, 1)
     private val transportParams: TransportParameters
@@ -116,11 +118,11 @@ class ClientConnection internal constructor(
             InetSocketAddress("::", 0)
         )
 
-        selectorManager.launch {
+        scope.launch {
             runReceiver()
         }
 
-        selectorManager.launch {
+        scope.launch {
             runRequester()
         }
 
@@ -345,7 +347,7 @@ class ClientConnection internal constructor(
         }
 
         try {
-            selectorManager.cancel()
+            scope.cancel()
         } catch (throwable: Throwable) {
             debug(throwable)
         }
