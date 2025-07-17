@@ -10,7 +10,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -112,12 +111,6 @@ class ClientConnection internal constructor(
         }
     }
 
-    override fun scheduleTerminate(pto: Int) {
-        scope.launch {
-            delay(pto.toLong())
-            terminate()
-        }
-    }
 
     private suspend fun startHandshake() {
         computeInitialKeys(dcidRegistry.initial)

@@ -41,7 +41,7 @@ open class ConnectionStreams(version: Int) :
     @OptIn(ExperimentalAtomicApi::class)
     private val absoluteBidirectionalStreamIdLimit = AtomicLong(Int.MAX_VALUE.toLong())
 
-    internal suspend fun createStream(
+    protected suspend fun createStream(
         connection: Connection,
         bidirectional: Boolean,
         streamHandlerFunction: (Stream) -> StreamHandler

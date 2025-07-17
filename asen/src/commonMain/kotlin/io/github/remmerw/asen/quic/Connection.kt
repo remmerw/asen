@@ -528,7 +528,11 @@ abstract class Connection(
         }
     }
 
-    abstract fun scheduleTerminate(pto: Int)
+    suspend fun scheduleTerminate(pto: Int) {
+        delay(pto.toLong())
+        terminate()
+    }
+
 
     private suspend fun handlePacketInClosingState(level: Level) {
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2.2
@@ -572,7 +576,7 @@ abstract class Connection(
         }
     }
 
-    private fun drain() {
+    private suspend fun drain() {
         state(State.Draining)
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2
         // "The closing and draining connection states exist to ensure that connections close
