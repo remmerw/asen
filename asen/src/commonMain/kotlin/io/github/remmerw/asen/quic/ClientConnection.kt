@@ -5,11 +5,9 @@ import io.github.remmerw.borr.PeerId
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 import io.ktor.network.sockets.aSocket
-import io.ktor.network.sockets.isClosed
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -21,7 +19,6 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class ClientConnection internal constructor(
     version: Int,
-    private val selectorManager: SelectorManager,
     remotePeerId: PeerId,
     remoteAddress: InetSocketAddress,
     cipherSuites: List<CipherSuite>,
@@ -29,7 +26,7 @@ class ClientConnection internal constructor(
     responder: Responder,
     private val connector: Connector
 ) : Connection(version, remotePeerId, remoteAddress, responder) {
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val selectorManager: SelectorManager = SelectorManager(Dispatchers.IO)
     private val tlsEngine: TlsClientEngine
     private val handshakeDone = Semaphore(1, 1)
     private val transportParams: TransportParameters
@@ -119,10 +116,11 @@ class ClientConnection internal constructor(
             InetSocketAddress("::", 0)
         )
 
-        scope.launch {
+        selectorManager.launch {
             runReceiver()
         }
-        scope.launch {
+
+        selectorManager.launch {
             runRequester()
         }
 
@@ -340,50 +338,30 @@ class ClientConnection internal constructor(
         } catch (_: Throwable) {
         }
 
-
-
         try {
-            socket?.isClosed?.let {
-                if (!it) {
-                    socket!!.close()
-                }
-            }
+            selectorManager.close()
         } catch (throwable: Throwable) {
             debug(throwable)
         }
 
         try {
-            scope.cancel()
+            selectorManager.cancel()
+        } catch (throwable: Throwable) {
+            debug(throwable)
+        }
+
+        try {
+            socket?.close()
         } catch (throwable: Throwable) {
             debug(throwable)
         }
     }
 
-    private suspend fun runReceiver() {
-        try {
-            while (selectorManager.isActive) {
-                val receivedPacket = socket!!.receive()
-                try {
-                    process(receivedPacket.packet.readByteArray())
-                } catch (throwable: Throwable) {
-                    debug(throwable)
-                }
-            }
-        } catch (_: CancellationException) {
-            // ignore exception
-        } catch (throwable: Throwable) {
-            socket?.isClosed?.let {
-                if (!it) {
-                    debug(throwable)
-                }
-            }
-        } finally {
+    private suspend fun runReceiver(): Unit = coroutineScope {
+        while (isActive) {
+            val receivedPacket = socket!!.receive()
             try {
-                socket?.isClosed?.let {
-                    if (!it) {
-                        socket!!.close()
-                    }
-                }
+                process(receivedPacket.packet.readByteArray())
             } catch (throwable: Throwable) {
                 debug(throwable)
             }

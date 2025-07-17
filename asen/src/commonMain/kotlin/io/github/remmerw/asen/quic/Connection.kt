@@ -5,9 +5,9 @@ import io.github.remmerw.borr.PeerId
 import io.ktor.network.sockets.BoundDatagramSocket
 import io.ktor.network.sockets.Datagram
 import io.ktor.network.sockets.InetSocketAddress
-import io.ktor.network.sockets.isClosed
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.io.Buffer
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -686,44 +686,20 @@ abstract class Connection(
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    suspend fun runRequester() {
-        try {
-            // Determine whether this loop must be ended _before_ composing packets, to avoid
-            // race conditions with
-            // items being queued just after the packet assembler (for that level) has executed.
-            while (true) {
-                lossDetection()
-                sendIfAny()
+    suspend fun runRequester(): Unit = coroutineScope {
+        while (isActive) {
+            lossDetection()
+            sendIfAny()
 
-                keepAlive() // only happens when enabled
-                checkIdle() // only happens when enabled
+            keepAlive() // only happens when enabled
+            checkIdle() // only happens when enabled
 
-                val time = min(
-                    (Settings.MAX_ACK_DELAY * (idleCounter.load() + 1)),
-                    1000
-                ).toLong() // time is max 1s
-                delay(time)
-            }
-        } catch (_: CancellationException) {
-            // ignore exception
-        } catch (_: Throwable) {
-            socket?.isClosed?.let {
-                if (!it) {
-                    abortConnection()
-                }
-            }
+            val time = min(
+                (Settings.MAX_ACK_DELAY * (idleCounter.load() + 1)),
+                1000
+            ).toLong() // time is max 1s
+            delay(time)
         }
-    }
-
-    /**
-     * Abort connection due to a fatal error in this client.
-     * No message is sent to peer; just inform client it's all over.
-     *
-     */
-    private suspend fun abortConnection() {
-        state(State.Failed)
-        clearRequests()
-        terminate()
     }
 
     private suspend fun sendIfAny() {

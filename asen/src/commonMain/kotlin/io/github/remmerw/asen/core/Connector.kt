@@ -17,7 +17,6 @@ import io.github.remmerw.asen.quic.Requester
 import io.github.remmerw.asen.quic.Responder
 import io.github.remmerw.asen.quic.Stream
 import io.github.remmerw.asen.quic.Version
-import io.ktor.network.selector.SelectorManager
 
 
 internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
@@ -27,7 +26,6 @@ internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
     protocols.put(IDENTITY_PROTOCOL, IdentifyHandler(asen.peerId()))
 
     return connect(
-        asen.selectorManager(),
         asen.connector(),
         protocols, asen.certificate(), peeraddr, TIMEOUT
     )
@@ -35,7 +33,6 @@ internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
 
 
 suspend fun connect(
-    selectorManager: SelectorManager,
     connector: Connector,
     protocols: Protocols,
     certificate: Certificate,
@@ -52,7 +49,6 @@ suspend fun connect(
 
     val clientConnection = ClientConnection(
         version = Version.V1,
-        selectorManager = selectorManager,
         remotePeerId = remotePeerId,
         remoteAddress = remoteAddress,
         cipherSuites = listOf(CipherSuite.TLS_AES_128_GCM_SHA256),

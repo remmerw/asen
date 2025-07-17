@@ -18,9 +18,7 @@ import io.github.remmerw.asen.quic.Connector
 import io.github.remmerw.borr.Keys
 import io.github.remmerw.borr.PeerId
 import io.github.remmerw.borr.generateKeys
-import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex
@@ -69,7 +67,6 @@ class Asen internal constructor(
     private val peerStore: PeerStore,
     private val holePunch: HolePunch
 ) {
-    private val selectorManager = SelectorManager(Dispatchers.IO)
     private val connector: Connector = Connector()
     private val mutex = Mutex()
 
@@ -172,12 +169,6 @@ class Asen internal constructor(
         } catch (throwable: Throwable) {
             debug(throwable)
         }
-
-        try {
-            selectorManager.close()
-        } catch (throwable: Throwable) {
-            debug(throwable)
-        }
     }
 
     fun peerStore(): PeerStore {
@@ -194,10 +185,6 @@ class Asen internal constructor(
 
     internal fun connector(): Connector {
         return connector
-    }
-
-    internal fun selectorManager(): SelectorManager {
-        return selectorManager
     }
 
     internal fun certificate(): Certificate {
