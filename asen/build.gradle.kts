@@ -41,13 +41,13 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.kotlinx.serialization.protobuf)
+                implementation(libs.kotlinx.datetime)
                 implementation(libs.ktor.network)
                 implementation(libs.cryptography.core)
                 implementation(libs.cryptography.bigint)
                 implementation(libs.hmac.sha2)
 
 
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.0")
                 implementation("io.github.remmerw:frey:0.1.0")
                 implementation("io.github.remmerw:borr:0.0.3")
             }
