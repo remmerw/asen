@@ -11,7 +11,6 @@ import io.github.remmerw.asen.core.hopRequest
 import io.github.remmerw.asen.core.hostname
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.observedAddresses
-import io.github.remmerw.asen.core.prefixToString
 import io.github.remmerw.asen.core.relayMessage
 import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connector
@@ -34,7 +33,6 @@ internal const val MIXED_MODE = true
 internal const val DHT_ALPHA: Int = 30
 internal const val DHT_CONCURRENCY: Int = 5
 internal const val TIMEOUT: Int = 5 // in seconds
-val LIBP2P_CERTIFICATE_EXTENSION: String = prefixToString()
 
 fun createInetSocketAddress(address: ByteArray, port: Int): InetSocketAddress {
     return InetSocketAddress(hostname(address), port)

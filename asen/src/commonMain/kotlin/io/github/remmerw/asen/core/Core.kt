@@ -42,22 +42,14 @@ import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.experimental.xor
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-const val TLS_HANDSHAKE = "libp2p-tls-handshake:"
-
 const val MULTISTREAM_PROTOCOL: String = "/multistream/1.0.0"
 const val DHT_PROTOCOL: String = "/ipfs/kad/1.0.0"
 const val IDENTITY_PROTOCOL: String = "/ipfs/id/1.0.0"
 const val RELAY_PROTOCOL_HOP: String = "/libp2p/circuit/relay/0.2.0/hop"
 const val RELAY_PROTOCOL_STOP: String = "/libp2p/circuit/relay/0.2.0/stop"
 
-
-private val EXTENSION_PREFIX = intArrayOf(1, 3, 6, 1, 4, 1, 53594)
-private val PREFIXED_EXTENSION_ID = getPrefixedExtensionID(intArrayOf(1, 1))
-val BYTES_EMPTY: ByteArray = byteArrayOf()
-
-
 internal fun newSignature(keys: Keys, addresses: List<SocketAddress>): ByteArray {
-    var toVerify = BYTES_EMPTY
+    var toVerify = byteArrayOf()
     for (address in addresses) {
         val encoded = address.encoded()
         toVerify = concat(toVerify, encoded)
@@ -90,37 +82,6 @@ internal fun reachablePeeraddr(peerIdRaw: ByteArray, addresses: List<ByteArray>)
         }
     }
     return null
-}
-
-
-fun concat(vararg arrays: IntArray): IntArray {
-    var length = 0
-    for (array in arrays) {
-        length += array.size
-    }
-    val result = IntArray(length)
-    var pos = 0
-    for (array in arrays) {
-        array.copyInto(result, pos, 0, array.size)
-        pos += array.size
-    }
-    return result
-}
-
-private fun getPrefixedExtensionID(suffix: IntArray): IntArray {
-    return concat(EXTENSION_PREFIX, suffix)
-}
-
-
-internal fun prefixToString(): String {
-    var s = ""
-    for (i in PREFIXED_EXTENSION_ID.indices) {
-        if (i > 0) {
-            s = "$s."
-        }
-        s += PREFIXED_EXTENSION_ID[i].toString()
-    }
-    return s
 }
 
 internal fun createHash(bytes: ByteArray): ByteArray {
@@ -171,14 +132,14 @@ internal fun receiveResponse(data: Buffer): ByteArray {
 
 private fun transform(bytes: Buffer): ByteArray {
     if (bytes.size == 0L) {
-        return BYTES_EMPTY
+        return byteArrayOf()
     }
 
     val size = readUnsignedVariant(bytes)
     val frame = bytes.readByteArray(size)
 
     if (frame.isEmpty()) {
-        return BYTES_EMPTY
+        return byteArrayOf()
     } else {
 
         if (!StreamState.isProtocol(frame)) {

@@ -4,7 +4,6 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.EC
 import dev.whyoleg.cryptography.algorithms.ECDSA
 import dev.whyoleg.cryptography.bigint.toBigInt
-import io.github.remmerw.asen.LIBP2P_CERTIFICATE_EXTENSION
 import io.github.remmerw.asen.cert.ASN1Encodable
 import io.github.remmerw.asen.cert.ASN1Object
 import io.github.remmerw.asen.cert.ASN1ObjectIdentifier
@@ -187,4 +186,41 @@ class SignedKey internal constructor(pubKey: ByteArray, signature: ByteArray) : 
         val ansiEncodable = arrayOf<ASN1Encodable>(this.pubKey, this.signature)
         return DERSequence(ansiEncodable)
     }
+}
+
+
+private const val TLS_HANDSHAKE = "libp2p-tls-handshake:"
+private val EXTENSION_PREFIX = intArrayOf(1, 3, 6, 1, 4, 1, 53594)
+private val PREFIXED_EXTENSION_ID = getPrefixedExtensionID(intArrayOf(1, 1))
+
+private val LIBP2P_CERTIFICATE_EXTENSION: String = prefixToString()
+
+private fun getPrefixedExtensionID(suffix: IntArray): IntArray {
+    return concat(EXTENSION_PREFIX, suffix)
+}
+
+
+private fun prefixToString(): String {
+    var s = ""
+    for (i in PREFIXED_EXTENSION_ID.indices) {
+        if (i > 0) {
+            s = "$s."
+        }
+        s += PREFIXED_EXTENSION_ID[i].toString()
+    }
+    return s
+}
+
+private fun concat(vararg arrays: IntArray): IntArray {
+    var length = 0
+    for (array in arrays) {
+        length += array.size
+    }
+    val result = IntArray(length)
+    var pos = 0
+    for (array in arrays) {
+        array.copyInto(result, pos, 0, array.size)
+        pos += array.size
+    }
+    return result
 }

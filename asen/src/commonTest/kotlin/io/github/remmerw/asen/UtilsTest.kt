@@ -1,7 +1,6 @@
 package io.github.remmerw.asen
 
 import io.github.remmerw.asen.core.AddressUtil
-import io.github.remmerw.asen.core.BYTES_EMPTY
 import io.github.remmerw.asen.core.HopMessage
 import io.github.remmerw.asen.core.Status
 import io.github.remmerw.asen.core.createPeerIdKey
@@ -79,7 +78,7 @@ class UtilsTest {
 
     @Test
     fun emptyData() {
-        val data = BYTES_EMPTY
+        val data = byteArrayOf()
 
         val size = unsignedVariantSize(data.size.toLong()) + data.size
 
