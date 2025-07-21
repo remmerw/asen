@@ -1,5 +1,7 @@
 package io.github.remmerw.asen.quic
 
+import io.ktor.util.collections.ConcurrentMap
+import io.ktor.util.collections.ConcurrentSet
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -11,8 +13,8 @@ import kotlin.time.TimeSource
  * Listens for received packets and generates ack frames for them.
  */
 internal class AckGenerator {
-    private val rangesToAcknowledge: MutableSet<Long> = mutableSetOf()
-    private val ackSentWithPacket: MutableMap<Long, List<Long>> = mutableMapOf()
+    private val rangesToAcknowledge: MutableSet<Long> = ConcurrentSet()
+    private val ackSentWithPacket: MutableMap<Long, List<Long>> = ConcurrentMap()
 
 
     @Volatile
