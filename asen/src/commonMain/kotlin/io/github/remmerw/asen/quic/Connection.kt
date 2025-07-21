@@ -723,11 +723,11 @@ abstract class Connection(
                 val datagram = Datagram(buffer, remoteAddress)
 
                 val timeSent = TimeSource.Monotonic.markNow()
+                packetSent(packet, size.toInt(), timeSent)
                 socket!!.send(datagram)
 
-
                 idleCounter.store(0)
-                packetSent(packet, size.toInt(), timeSent)
+
                 packetIdleSent(packet, timeSent)
             }
         }

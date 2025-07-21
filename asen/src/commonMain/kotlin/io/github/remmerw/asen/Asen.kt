@@ -141,11 +141,11 @@ class Asen internal constructor(
      *
      * @return list of relay addresses
      */
-    fun reservations(): List<InetSocketAddress> {
-        val peeraddrs = mutableListOf<InetSocketAddress>()
+    fun reservations(): List<String> {
+        val peeraddrs = mutableListOf<String>()
         for (connection in connector().connections()) {
             if (connection.isMarked()) {
-                peeraddrs.add(connection.remoteAddress())
+                peeraddrs.add(connection.remoteAddress().toString())
             }
         }
         return peeraddrs
