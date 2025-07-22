@@ -3,7 +3,6 @@ package io.github.remmerw.asen.core
 import io.github.remmerw.asen.Asen
 import io.github.remmerw.asen.Peeraddr
 import io.github.remmerw.asen.TIMEOUT
-import io.github.remmerw.asen.createInetSocketAddress
 import io.github.remmerw.asen.quic.AlpnRequester
 import io.github.remmerw.asen.quic.AlpnState
 import io.github.remmerw.asen.quic.Certificate
@@ -17,6 +16,8 @@ import io.github.remmerw.asen.quic.Requester
 import io.github.remmerw.asen.quic.Responder
 import io.github.remmerw.asen.quic.Stream
 import io.github.remmerw.asen.quic.Version
+import java.net.InetAddress
+import java.net.InetSocketAddress
 
 
 internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
@@ -40,8 +41,8 @@ suspend fun connect(
     timeout: Int
 ): Connection {
 
-    val remoteAddress = createInetSocketAddress(
-        peeraddr.address,
+    val remoteAddress = InetSocketAddress(
+        InetAddress.getByAddress(peeraddr.address),
         peeraddr.port.toInt()
     )
     val remotePeerId = peeraddr.peerId

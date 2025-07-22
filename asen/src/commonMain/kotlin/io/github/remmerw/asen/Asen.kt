@@ -17,7 +17,6 @@ import io.github.remmerw.asen.quic.Connector
 import io.github.remmerw.borr.Keys
 import io.github.remmerw.borr.PeerId
 import io.github.remmerw.borr.generateKeys
-import io.ktor.network.sockets.InetSocketAddress
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex
@@ -33,10 +32,6 @@ internal const val MIXED_MODE = true
 internal const val DHT_ALPHA: Int = 30
 internal const val DHT_CONCURRENCY: Int = 5
 internal const val TIMEOUT: Int = 5 // in seconds
-
-fun createInetSocketAddress(address: ByteArray, port: Int): InetSocketAddress {
-    return InetSocketAddress(hostname(address), port)
-}
 
 
 interface PeerStore {

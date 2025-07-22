@@ -1,12 +1,12 @@
 package io.github.remmerw.asen.quic
 
-import io.ktor.util.collections.ConcurrentMap
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.max
 
 internal class LossDetector(private val connectionFlow: ConnectionFlow) {
-    private val packetSentLog: MutableMap<Long, PacketStatus> = ConcurrentMap()
+    private val packetSentLog: MutableMap<Long, PacketStatus> = ConcurrentHashMap()
 
     @Volatile
     private var largestAcked = -1L

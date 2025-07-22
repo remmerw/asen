@@ -1,10 +1,10 @@
 package io.github.remmerw.asen.quic
 
-import io.ktor.util.collections.ConcurrentSet
+import java.util.concurrent.ConcurrentHashMap
 
 
 class Connector() {
-    private val connections: MutableSet<ClientConnection> = ConcurrentSet()
+    private val connections: MutableSet<ClientConnection> = ConcurrentHashMap.newKeySet()
 
 
     fun connections(): Set<ClientConnection> {

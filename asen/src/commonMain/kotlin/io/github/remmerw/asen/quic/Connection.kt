@@ -2,13 +2,14 @@ package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
 import io.github.remmerw.borr.PeerId
-import io.ktor.network.sockets.BoundDatagramSocket
-import io.ktor.network.sockets.Datagram
-import io.ktor.network.sockets.InetSocketAddress
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetSocketAddress
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicInt
@@ -25,7 +26,7 @@ abstract class Connection(
     private val remoteAddress: InetSocketAddress,
     private val responder: Responder
 ) : ConnectionStreams(version) {
-    protected var socket: BoundDatagramSocket? = null
+    protected var socket: DatagramSocket? = null
 
     @OptIn(ExperimentalAtomicApi::class)
     internal val handshakeState =
@@ -713,17 +714,18 @@ abstract class Connection(
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    private suspend fun send(itemsToSend: List<Packet>) {
+    private fun send(itemsToSend: List<Packet>) {
         for (packet in itemsToSend) {
             val keys = ownSecrets(packet.level())
             if (keys != null) { // keys can be discard in between
                 val buffer = packet.generatePacketBytes(keys)
-                val size = buffer.size
 
-                val datagram = Datagram(buffer, remoteAddress)
+                val data = buffer.readByteArray()
+
+                val datagram = DatagramPacket(data, data.size, remoteAddress)
 
                 val timeSent = TimeSource.Monotonic.markNow()
-                packetSent(packet, size.toInt(), timeSent)
+                packetSent(packet, data.size, timeSent)
                 socket!!.send(datagram)
 
                 idleCounter.store(0)

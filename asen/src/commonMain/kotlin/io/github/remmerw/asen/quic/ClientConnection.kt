@@ -2,9 +2,6 @@ package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
 import io.github.remmerw.borr.PeerId
-import io.ktor.network.selector.SelectorManager
-import io.ktor.network.sockets.InetSocketAddress
-import io.ktor.network.sockets.aSocket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -13,7 +10,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withTimeout
-import kotlinx.io.readByteArray
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetSocketAddress
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
@@ -27,7 +26,7 @@ class ClientConnection internal constructor(
     responder: Responder,
     private val connector: Connector
 ) : Connection(version, remotePeerId, remoteAddress, responder) {
-    private val selectorManager: SelectorManager = SelectorManager(Dispatchers.IO)
+
     private val scope = CoroutineScope(Dispatchers.IO)
     private val tlsEngine: TlsClientEngine
     private val handshakeDone = Semaphore(1, 1)
@@ -79,8 +78,9 @@ class ClientConnection internal constructor(
 
 
         this.tlsEngine = TlsClientEngine(
-            remoteAddress.hostname, certificate, cipherSuites,
-            listOf(tpExtension, aplnExtension), CryptoMessageSender(), StatusEventHandler()
+            remoteAddress.hostName, certificate, cipherSuites,
+            listOf(tpExtension, aplnExtension),
+            CryptoMessageSender(), StatusEventHandler()
         )
         initializeCryptoStreams(tlsEngine)
     }
@@ -114,9 +114,7 @@ class ClientConnection internal constructor(
     private suspend fun startHandshake() {
         computeInitialKeys(dcidRegistry.initial)
 
-        socket = aSocket(selectorManager).udp().bind(
-            InetSocketAddress("::", 0)
-        )
+        socket = DatagramSocket()
 
         scope.launch {
             runReceiver()
@@ -341,12 +339,6 @@ class ClientConnection internal constructor(
         }
 
         try {
-            selectorManager.close()
-        } catch (throwable: Throwable) {
-            debug(throwable)
-        }
-
-        try {
             scope.cancel()
         } catch (throwable: Throwable) {
             debug(throwable)
@@ -360,13 +352,23 @@ class ClientConnection internal constructor(
     }
 
     private suspend fun runReceiver(): Unit = coroutineScope {
-        while (isActive) {
-            val receivedPacket = socket!!.receive()
-            try {
-                process(receivedPacket.packet.readByteArray())
-            } catch (throwable: Throwable) {
-                debug(throwable)
+
+        val data = ByteArray(1500)
+
+        try {
+            while (isActive) {
+                val receivedPacket = DatagramPacket(data, data.size)
+
+                socket!!.receive(receivedPacket)
+
+                val data = receivedPacket.data.copyOfRange(0, receivedPacket.length)
+                try {
+                    process(data)
+                } catch (throwable: Throwable) {
+                    debug(throwable)
+                }
             }
+        } catch (_: Throwable) {
         }
     }
 

@@ -1,9 +1,10 @@
 package io.github.remmerw.asen.core
 
-import io.ktor.util.collections.ConcurrentSet
+import java.util.concurrent.ConcurrentHashMap
+
 
 internal class DhtPeers(val saturation: Int) {
-    private val peerSet: MutableSet<DhtPeer> = ConcurrentSet()
+    private val peerSet: MutableSet<DhtPeer> = ConcurrentHashMap.newKeySet()
 
 
     internal fun nextPeer(): DhtPeer? {

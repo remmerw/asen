@@ -24,7 +24,6 @@ import io.github.remmerw.borr.sign
 import io.github.remmerw.frey.DnsResolver
 import io.github.remmerw.frey.defaultDnsServer
 import io.github.remmerw.frey.defaultDnsServerIpv6
-import io.ktor.util.collections.ConcurrentSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
@@ -36,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
@@ -241,7 +241,7 @@ internal fun concat(vararg chunks: ByteArray): ByteArray {
     return result
 }
 
-internal suspend fun resolveAddresses(): Set<Peeraddr> {
+internal fun resolveAddresses(): Set<Peeraddr> {
     val addresses: MutableSet<Peeraddr> = mutableSetOf()
 
     val dnsServer = if (MIXED_MODE) {
@@ -296,7 +296,7 @@ internal suspend fun resolveAddresses(): Set<Peeraddr> {
 @OptIn(ExperimentalAtomicApi::class)
 suspend fun observedAddresses(asen: Asen): Set<Address> = coroutineScope {
 
-    val result: MutableSet<Address> = ConcurrentSet()
+    val result: MutableSet<Address> = ConcurrentHashMap.newKeySet()
     val addresses = resolveAddresses() // this you can trust
 
     addresses.forEach { peeraddr ->
@@ -423,7 +423,7 @@ private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): Address? {
     return null
 }
 
-private suspend fun resolveAddresses(
+private fun resolveAddresses(
     dnsResolver: DnsResolver,
     host: String,
     hosts: MutableSet<String>
