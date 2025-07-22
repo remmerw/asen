@@ -24,8 +24,6 @@ class ObservedTest {
                     1234.toUShort()
                 )
                 assertNotNull(peeraddr)
-
-                println("Address " + peeraddr.hostname())
             }
 
             server.shutdown()

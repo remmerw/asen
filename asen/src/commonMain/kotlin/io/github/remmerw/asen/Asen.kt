@@ -8,7 +8,6 @@ import io.github.remmerw.asen.core.createPeerIdKey
 import io.github.remmerw.asen.core.decodePeerIdByName
 import io.github.remmerw.asen.core.doReservations
 import io.github.remmerw.asen.core.hopRequest
-import io.github.remmerw.asen.core.hostname
 import io.github.remmerw.asen.core.newSignature
 import io.github.remmerw.asen.core.observedAddresses
 import io.github.remmerw.asen.core.relayMessage
@@ -309,10 +308,6 @@ data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort
         require(port > 0.toUShort() && port <= 65535.toUShort()) {
             "Invalid port: $port"
         }
-    }
-
-    fun hostname(): String {
-        return hostname(address)
     }
 
     fun toSocketAddress(): SocketAddress {

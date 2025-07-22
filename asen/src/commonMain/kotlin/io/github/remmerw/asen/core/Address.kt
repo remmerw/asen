@@ -11,11 +11,6 @@ import kotlinx.io.readByteArray
 import kotlinx.io.writeUShort
 import kotlin.experimental.or
 
-internal fun numericInet4(address: ByteArray): String {
-    return (address[0].toInt() and 255).toString() + "." +
-            (address[1].toInt() and 255) + "." +
-            (address[2].toInt() and 255) + "." + (address[3].toInt() and 255)
-}
 
 internal fun holder(address: ByteArray): Int {
     var holder: Int = address[3].toInt() and 0xFF
@@ -23,25 +18,6 @@ internal fun holder(address: ByteArray): Int {
     holder = holder or ((address[1].toInt() shl 16) and 0xFF0000)
     holder = holder or ((address[0].toInt() shl 24) and -0x1000000)
     return holder
-}
-
-@OptIn(ExperimentalStdlibApi::class)
-internal fun numericInet6(address: ByteArray): String {
-    val builder = StringBuilder(39)
-
-    for (var2 in 0..7) {
-        builder.append(
-            (
-                    address[var2 shl 1].toInt() shl 8 and '\uff00'.code or
-                            (address[(var2 shl 1) + 1].toInt() and 255)
-                    ).toHexString()
-        )
-        if (var2 < 7) {
-            builder.append(":")
-        }
-    }
-
-    return builder.toString()
 }
 
 internal fun encodeProtocol(code: Int, out: Buffer) {
@@ -56,14 +32,6 @@ internal fun encodePart(port: UShort, buffer: Buffer) {
 
 internal fun encodePart(address: ByteArray, buffer: Buffer) {
     buffer.write(address)
-}
-
-
-fun hostname(address: ByteArray): String {
-    if (address.size == 4) {
-        return numericInet4(address)
-    }
-    return numericInet6(address)
 }
 
 fun encoded(address: ByteArray, port: UShort): ByteArray {
