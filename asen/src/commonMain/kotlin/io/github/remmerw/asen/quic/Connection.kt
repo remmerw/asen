@@ -688,19 +688,21 @@ abstract class Connection(
 
     @OptIn(ExperimentalAtomicApi::class)
     suspend fun runRequester(): Unit = coroutineScope {
-        while (isActive) {
-            lossDetection()
-            sendIfAny()
+        try {
+            while (isActive) {
+                lossDetection()
+                sendIfAny()
 
-            keepAlive() // only happens when enabled
-            checkIdle() // only happens when enabled
+                keepAlive() // only happens when enabled
+                checkIdle() // only happens when enabled
 
-            val time = min(
-                (Settings.MAX_ACK_DELAY * (idleCounter.load() + 1)),
-                1000
-            ).toLong() // time is max 1s
-            delay(time)
-        }
+                val time = min(
+                    (Settings.MAX_ACK_DELAY * (idleCounter.load() + 1)),
+                    1000
+                ).toLong() // time is max 1s
+                delay(time)
+            }
+        } catch (_:Throwable){}
     }
 
     private suspend fun sendIfAny() {
