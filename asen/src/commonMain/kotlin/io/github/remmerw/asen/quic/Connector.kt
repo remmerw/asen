@@ -51,7 +51,7 @@ class Connector() : Listener {
 
     private suspend fun runReceiver(): Unit = coroutineScope {
 
-        val data = ByteArray(1500) // todo check
+        val data = ByteArray(Settings.MAX_PACKET_SIZE)
 
         try {
             while (isActive) {
