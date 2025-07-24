@@ -3,6 +3,7 @@ package io.github.remmerw.asen
 import io.github.remmerw.asen.core.connect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import java.net.InetSocketAddress
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -44,10 +45,7 @@ class ConnectTest {
         assertTrue(addresses.isNotEmpty())
 
         val publicAddresses = addresses.map { address ->
-
-            assertTrue(address.inet4() || address.inet6())
-
-            SocketAddress(address.bytes, 5001.toUShort())
+            InetSocketAddress(address, 5001)
         }
         server.makeReservations(publicAddresses, 25, 120)
 
@@ -64,7 +62,7 @@ class ConnectTest {
         }
 
         for (address in server.reservations()) {
-            println(address.toString())
+            println(address)
         }
         server.shutdown()
     }

@@ -20,7 +20,7 @@ class ObservedTest {
 
             addresses.forEach { entry ->
                 val peeraddr = Peeraddr(
-                    server.peerId(), entry.bytes,
+                    server.peerId(), entry.address,
                     1234.toUShort()
                 )
                 assertNotNull(peeraddr)

@@ -3,14 +3,10 @@ package io.github.remmerw.asen.quic
 import io.github.remmerw.asen.debug
 import io.github.remmerw.borr.PeerId
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withTimeout
-import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import kotlin.concurrent.atomics.AtomicInt
@@ -19,15 +15,17 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class ClientConnection internal constructor(
     version: Int,
+    socket: DatagramSocket,
     remotePeerId: PeerId,
     remoteAddress: InetSocketAddress,
     cipherSuites: List<CipherSuite>,
     certificate: Certificate,
     responder: Responder,
-    private val connector: Connector
-) : Connection(version, remotePeerId, remoteAddress, responder) {
+    private val scope: CoroutineScope,
+    private val listener: Listener
+) : Connection(version, socket, remotePeerId, remoteAddress, responder) {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
+
     private val tlsEngine: TlsClientEngine
     private val handshakeDone = Semaphore(1, 1)
     private val transportParams: TransportParameters
@@ -35,6 +33,7 @@ class ClientConnection internal constructor(
     private val scidRegistry = ScidRegistry()
     private val dcidRegistry: DcidRegistry
     private val originalDcid: Number
+    private var runRequesterJob: Job? = null
 
     /**
      * The maximum numbers of connection IDs this endpoint can use; determined by the TP
@@ -102,7 +101,6 @@ class ClientConnection internal constructor(
                     abortHandshake()
                     throw Exception("Handshake error state is " + state())
                 }
-                connector.addConnection(this@ClientConnection)
             }
         } catch (throwable: Throwable) {
             abortHandshake()
@@ -114,13 +112,8 @@ class ClientConnection internal constructor(
     private suspend fun startHandshake() {
         computeInitialKeys(dcidRegistry.initial)
 
-        socket = DatagramSocket()
 
-        scope.launch {
-            runReceiver()
-        }
-
-        scope.launch {
+        runRequesterJob = scope.launch {
             runRequester()
         }
 
@@ -331,7 +324,7 @@ class ClientConnection internal constructor(
 
     override suspend fun terminate() {
         super.terminate()
-        connector.removeConnection(this)
+        listener.removeConnection(this)
 
         try {
             handshakeDone.release()
@@ -339,46 +332,16 @@ class ClientConnection internal constructor(
         }
 
         try {
-            scope.cancel()
-        } catch (throwable: Throwable) {
-            debug(throwable)
-        }
-
-        try {
-            socket?.close()
-        } catch (throwable: Throwable) {
-            debug(throwable)
-        }
-    }
-
-    private suspend fun runReceiver(): Unit = coroutineScope {
-
-        val data = ByteArray(1500)
-
-        try {
-            while (isActive) {
-                val receivedPacket = DatagramPacket(data, data.size)
-
-                socket!!.receive(receivedPacket)
-
-                val data = receivedPacket.data.copyOfRange(0, receivedPacket.length)
-                try {
-                    process(data)
-                } catch (throwable: Throwable) {
-                    debug(throwable)
-                }
-            }
+            runRequesterJob?.cancel()
         } catch (_: Throwable) {
         }
+
     }
 
     private fun initialDcid(): Number {
         return dcidRegistry.initial
     }
 
-    private suspend fun process(data: ByteArray) {
-        nextPacket(Reader(data, data.size))
-    }
 
     @OptIn(ExperimentalAtomicApi::class)
     private suspend fun validateAndProcess(remoteTransportParameters: TransportParameters) {

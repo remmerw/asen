@@ -167,7 +167,7 @@ class UtilsTest {
 
         publicAddresses.forEach { peeraddr ->
             assertNotNull(peeraddr)
-            val data = peeraddr.toSocketAddress().encoded()
+            val data = peeraddr.encoded()
             assertNotNull(data)
             val cmp = parsePeeraddr(random, data)
             assertNotNull(cmp)

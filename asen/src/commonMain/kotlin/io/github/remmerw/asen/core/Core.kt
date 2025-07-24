@@ -4,15 +4,14 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.SHA256
 import dev.whyoleg.cryptography.bigint.BigInt
 import dev.whyoleg.cryptography.bigint.decodeToBigInt
-import io.github.remmerw.asen.Address
 import io.github.remmerw.asen.Asen
 import io.github.remmerw.asen.MIXED_MODE
 import io.github.remmerw.asen.Peeraddr
-import io.github.remmerw.asen.SocketAddress
 import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV4
 import io.github.remmerw.asen.core.AddressUtil.textToNumericFormatV6
 import io.github.remmerw.asen.createPeeraddr
 import io.github.remmerw.asen.debug
+import io.github.remmerw.asen.encoded
 import io.github.remmerw.asen.parseAddress
 import io.github.remmerw.asen.parsePeerId
 import io.github.remmerw.asen.quic.Certificate
@@ -35,6 +34,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
+import java.net.Inet6Address
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -48,7 +50,7 @@ const val IDENTITY_PROTOCOL: String = "/ipfs/id/1.0.0"
 const val RELAY_PROTOCOL_HOP: String = "/libp2p/circuit/relay/0.2.0/hop"
 const val RELAY_PROTOCOL_STOP: String = "/libp2p/circuit/relay/0.2.0/stop"
 
-internal fun newSignature(keys: Keys, addresses: List<SocketAddress>): ByteArray {
+internal fun newSignature(keys: Keys, addresses: List<InetSocketAddress>): ByteArray {
     var toVerify = byteArrayOf()
     for (address in addresses) {
         val encoded = address.encoded()
@@ -294,9 +296,9 @@ internal fun resolveAddresses(): Set<Peeraddr> {
 
 
 @OptIn(ExperimentalAtomicApi::class)
-suspend fun observedAddresses(asen: Asen): Set<Address> = coroutineScope {
+suspend fun observedAddresses(asen: Asen): Set<InetAddress> = coroutineScope {
 
-    val result: MutableSet<Address> = ConcurrentHashMap.newKeySet()
+    val result: MutableSet<InetAddress> = ConcurrentHashMap.newKeySet()
     val addresses = resolveAddresses() // this you can trust
 
     addresses.forEach { peeraddr ->
@@ -306,7 +308,7 @@ suspend fun observedAddresses(asen: Asen): Set<Address> = coroutineScope {
                 if (MIXED_MODE) {
                     result.add(observed)
                 } else {
-                    if (observed.inet6()) {
+                    if (observed is Inet6Address) {
                         result.add(observed)
                     }
                 }
@@ -349,7 +351,7 @@ internal fun CoroutineScope.makeReservation(
 @OptIn(ExperimentalAtomicApi::class)
 internal suspend fun doReservations(
     asen: Asen,
-    addresses: List<SocketAddress>,
+    addresses: List<InetSocketAddress>,
     maxReservation: Int,
     timeout: Int
 ) {
@@ -388,9 +390,9 @@ internal suspend fun doReservations(
 
 
 private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean {
-    connection.enableKeepAlive()
     try {
         reserveHop(connection, asen.peerId())
+        connection.enableKeepAlive()
         connection.mark()
         return true
     } catch (_: Throwable) {
@@ -400,7 +402,7 @@ private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean
 }
 
 
-private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): Address? {
+private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): InetAddress? {
     var connection: Connection? = null
     try {
         connection = connect(asen, peeraddr)
@@ -410,7 +412,7 @@ private suspend fun observedAddress(asen: Asen, peeraddr: Peeraddr): Address? {
         if (info.observedAddress != null) {
             val observed = parseAddress(info.observedAddress)
             if (observed != null) {
-                return observed.toAddress()
+                return observed.address
             }
         }
 

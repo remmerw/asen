@@ -7,6 +7,10 @@ import kotlin.random.Random
 internal object TestEnv {
     const val ITERATIONS: Int = 4096
 
+    fun longRunningTestsEnabled(): Boolean {
+        return false
+    }
+
     fun randomPeerId(): PeerId {
         return PeerId(getRandomBytes(32))
     }

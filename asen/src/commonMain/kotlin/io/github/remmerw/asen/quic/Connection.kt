@@ -22,11 +22,11 @@ import kotlin.time.TimeSource
 
 abstract class Connection(
     version: Int,
+    private val socket: DatagramSocket,
     private val remotePeerId: PeerId,
     private val remoteAddress: InetSocketAddress,
     private val responder: Responder
 ) : ConnectionStreams(version) {
-    protected var socket: DatagramSocket? = null
 
     @OptIn(ExperimentalAtomicApi::class)
     internal val handshakeState =
@@ -233,6 +233,10 @@ abstract class Connection(
         if (packetHeader.packetNumber > largestPacketNumber[level.ordinal]) {
             largestPacketNumber[level.ordinal] = packetHeader.packetNumber
         }
+    }
+
+    suspend fun process(data: ByteArray) {
+        nextPacket(Reader(data, data.size))
     }
 
 
@@ -702,7 +706,8 @@ abstract class Connection(
                 ).toLong() // time is max 1s
                 delay(time)
             }
-        } catch (_:Throwable){}
+        } catch (_: Throwable) {
+        }
     }
 
     private suspend fun sendIfAny() {
@@ -728,7 +733,7 @@ abstract class Connection(
 
                 val timeSent = TimeSource.Monotonic.markNow()
                 packetSent(packet, data.size, timeSent)
-                socket!!.send(datagram)
+                socket.send(datagram)
 
                 idleCounter.store(0)
 

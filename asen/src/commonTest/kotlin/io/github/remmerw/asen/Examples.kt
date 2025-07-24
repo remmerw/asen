@@ -3,6 +3,7 @@ package io.github.remmerw.asen
 import io.github.remmerw.borr.PeerId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import java.net.InetSocketAddress
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
@@ -21,7 +22,7 @@ class Examples {
         val bob = newAsen(holePunch = object : HolePunch {
             override fun invoke(
                 peerId: PeerId,
-                addresses: List<SocketAddress>
+                addresses: List<InetSocketAddress>
             ) {
                 connectId.store(peerId)
                 debug("Peer $peerId wants to connect with $addresses")
@@ -36,7 +37,7 @@ class Examples {
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
         val bobPublicAddresses = addresses.map { address ->
-            SocketAddress(address.bytes, 5555.toUShort()) // 5555 bob server
+            InetSocketAddress(address, 5555) // 5555 bob server
         }
 
         // Note: bob has a service running on port 5001
@@ -54,7 +55,7 @@ class Examples {
 
 
         val alicPublicAddresses = addresses.map { address ->
-            SocketAddress(address.bytes, 7777.toUShort()) // 7777 alice server
+            InetSocketAddress(address, 7777) // 7777 alice server
         }
 
         val peeraddrs = alice.resolveAddresses(

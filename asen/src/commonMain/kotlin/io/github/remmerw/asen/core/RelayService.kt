@@ -1,8 +1,8 @@
 package io.github.remmerw.asen.core
 
-import io.github.remmerw.asen.SocketAddress
 import io.github.remmerw.asen.TIMEOUT
 import io.github.remmerw.asen.debug
+import io.github.remmerw.asen.encoded
 import io.github.remmerw.asen.multihash
 import io.github.remmerw.asen.parseAddress
 import io.github.remmerw.asen.quic.Connection
@@ -23,6 +23,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
+import java.net.InetSocketAddress
 
 @Suppress("ArrayInDataClass")
 internal data class SignatureMessage(val bytes: ByteArray)
@@ -32,9 +33,9 @@ internal data class ConnectRequest(
     val signatureMessage: SignatureMessage,
     val done: Semaphore,
 ) : Requester {
-    private val result = mutableListOf<SocketAddress>()
+    private val result = mutableListOf<InetSocketAddress>()
 
-    fun result(): List<SocketAddress> {
+    fun result(): List<InetSocketAddress> {
         return result.toList()
     }
 
@@ -92,7 +93,7 @@ internal suspend fun connectHop(
     connection: Connection,
     target: PeerId,
     signatureMessage: SignatureMessage
-): List<SocketAddress>? {
+): List<InetSocketAddress>? {
 
     val done = Semaphore(1, 1)
 
@@ -162,7 +163,10 @@ internal suspend fun reserveHop(connection: Connection, self: PeerId) {
 }
 
 
-internal fun relayMessage(signature: ByteArray, addresses: List<SocketAddress>): SignatureMessage {
+internal fun relayMessage(
+    signature: ByteArray,
+    addresses: List<InetSocketAddress>
+): SignatureMessage {
     require(addresses.size <= Byte.MAX_VALUE) { "to many peeraddrs" }
 
     var size = Byte.SIZE_BYTES
@@ -209,7 +213,7 @@ internal fun CoroutineScope.hopRequest(
     target: PeerId,
     signatureMessage: SignatureMessage,
     channel: ReceiveChannel<Connection>
-): ReceiveChannel<List<SocketAddress>> = produce {
+): ReceiveChannel<List<InetSocketAddress>> = produce {
 
     channel.consumeEach { connection ->
         val handled: MutableSet<PeerId> = mutableSetOf()
@@ -231,13 +235,13 @@ internal fun CoroutineScope.hopRequest(
 }
 
 
-fun decodeMessage(peerId: PeerId, data: ByteArray): List<SocketAddress> {
+fun decodeMessage(peerId: PeerId, data: ByteArray): List<InetSocketAddress> {
     val buffer = Buffer()
     buffer.write(data)
 
     val toVerify = Buffer()
     val size = buffer.readByte()
-    val addresses = mutableListOf<SocketAddress>()
+    val addresses = mutableListOf<InetSocketAddress>()
 
     repeat(size.toInt()) {
         val length = readUnsignedVariant(buffer)
