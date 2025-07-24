@@ -240,21 +240,32 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
     @Test
     fun resolveAddresses(): Unit = runBlocking(Dispatchers.IO) {
 
-        val bob = newAsen()
+        val connectId = AtomicReference<PeerId?>(null)
+
+        val bob = newAsen(holePunch = object : HolePunch {
+            override fun invoke(
+                peerId: PeerId,
+                addresses: List<InetSocketAddress>
+            ) {
+                connectId.store(peerId)
+                debug("Peer $peerId wants to connect with $addresses")
+            }
+
+        })
         val alice = newAsen()
 
-        val observerAddresses = bob.observedAddresses()
-        assertTrue(observerAddresses.isNotEmpty(), "Observer Addresses not defined")
+        val addresses = bob.observedAddresses()
+        assertTrue(addresses.isNotEmpty(), "Observer Addresses not defined")
 
         // Use Case : alice wants to connect to bob
         // [1] bob has to make reservations to relays
-        val publicAddresses = observerAddresses.map { address ->
-            SocketAddress(address.bytes, 5001.toUShort())
+        val bobPublicAddresses = addresses.map { address ->
+            InetSocketAddress(address, 5555) // 5555 bob server
         }
 
         // Note: bob has a service running on port 5001
         bob.makeReservations(
-            publicAddresses,
+            bobPublicAddresses,
             20,
             120
         )  // timeout max 2 min (120 s) or 20 relays
@@ -264,12 +275,24 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
         assertTrue(bob.hasReservations())
 
         // [2] alice can find bob addresses via its peerId
-        val peeraddrs = alice.resolveAddresses(bob.peerId(), 120)  // timeout max 2 min (120 s)
+
+
+        val alicPublicAddresses = addresses.map { address ->
+            InetSocketAddress(address, 7777) // 7777 alice server
+        }
+
+        val peeraddrs = alice.resolveAddresses(
+            bob.peerId(), 120,
+            alicPublicAddresses
+        )  // timeout max 2 min (120 s)
 
         // testing
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses
         assertTrue(peeraddrs.isNotEmpty())
 
+        // testing that alice actually wants to connect to bob
+
+        assertEquals(connectId.load(), alice.peerId())
 
         bob.shutdown()
         alice.shutdown()
