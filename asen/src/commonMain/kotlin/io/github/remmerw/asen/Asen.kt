@@ -1,7 +1,6 @@
 package io.github.remmerw.asen
 
 
-import io.github.remmerw.asen.core.Base58
 import io.github.remmerw.asen.core.closestPeers
 import io.github.remmerw.asen.core.createCertificate
 import io.github.remmerw.asen.core.createPeerIdKey
@@ -16,6 +15,7 @@ import io.github.remmerw.asen.quic.Certificate
 import io.github.remmerw.asen.quic.Connector
 import io.github.remmerw.borr.Keys
 import io.github.remmerw.borr.PeerId
+import io.github.remmerw.borr.encode58
 import io.github.remmerw.borr.generateKeys
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.consumeEach
@@ -295,17 +295,8 @@ data class Peeraddr(val peerId: PeerId, val address: ByteArray, val port: UShort
 
 }
 
-
 fun InetSocketAddress.encoded(): ByteArray {
     return encoded(address.address, port.toUShort())
-}
-
-fun decode58(input: String): ByteArray {
-    return Base58.decode58(input)
-}
-
-fun encode58(data: ByteArray): String {
-    return Base58.encode58(data)
 }
 
 fun identifyPeerId(peerId: PeerId): ByteArray {

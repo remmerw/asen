@@ -3,9 +3,9 @@ package io.github.remmerw.asen.core
 import io.github.remmerw.asen.IP4
 import io.github.remmerw.asen.IP6
 import io.github.remmerw.asen.UDP
-import io.github.remmerw.asen.decode58
 import io.github.remmerw.asen.parsePeerId
 import io.github.remmerw.borr.PeerId
+import io.github.remmerw.borr.decode58
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import kotlinx.io.writeUShort
