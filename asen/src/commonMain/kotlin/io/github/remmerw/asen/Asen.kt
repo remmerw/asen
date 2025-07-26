@@ -146,10 +146,6 @@ class Asen internal constructor(
         return peeraddrs
     }
 
-    fun hasReservations(): Boolean {
-        return !reservations().isEmpty()
-    }
-
     fun numReservations(): Int {
         return reservations().size
     }

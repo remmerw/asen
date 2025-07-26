@@ -56,7 +56,7 @@ class ConnectTest {
         }
         println("Number of reservations " + server.numReservations())
 
-        if (!server.hasReservations()) {
+        if (server.numReservations() == 0) {
             println("nothing to test no dialable addresses")
             return@runBlocking
         }

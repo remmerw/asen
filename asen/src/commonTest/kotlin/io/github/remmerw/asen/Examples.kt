@@ -49,7 +49,7 @@ class Examples {
 
         println("Reservations " + bob.numReservations())
 
-        assertTrue(bob.hasReservations())
+        assertTrue(bob.numReservations() > 0)
 
         // [2] alice can find bob addresses via its peerId
 

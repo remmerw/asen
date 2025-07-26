@@ -240,7 +240,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
     @Test
     fun resolveAddresses(): Unit = runBlocking(Dispatchers.IO) {
 
-        val connectId = AtomicReference<PeerId?>(null)
+         val connectId = AtomicReference<PeerId?>(null)
 
         val bob = newAsen(holePunch = object : HolePunch {
             override fun invoke(
@@ -272,7 +272,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 
         println("Reservations " + bob.numReservations())
 
-        assertTrue(bob.hasReservations())
+        assertTrue(bob.numReservations() > 0)
 
         // [2] alice can find bob addresses via its peerId
 
