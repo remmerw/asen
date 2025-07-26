@@ -29,8 +29,7 @@ abstract class Connection(
 ) : ConnectionStreams(version) {
 
     @OptIn(ExperimentalAtomicApi::class)
-    internal val handshakeState =
-        AtomicReference(HandshakeState.Initial)
+    internal val handshakeState = AtomicReference(HandshakeState.Initial)
 
     @OptIn(ExperimentalAtomicApi::class)
     protected val remoteDelayScale = AtomicInt(Settings.ACK_DELAY_SCALE)
@@ -50,8 +49,6 @@ abstract class Connection(
     @Volatile
     private var lastPing = TimeSource.Monotonic.markNow()
 
-    @OptIn(ExperimentalAtomicApi::class)
-    private val enabledIdle = AtomicBoolean(false)
 
     @OptIn(ExperimentalAtomicApi::class)
     private val idleCounter = AtomicInt(0)
@@ -416,7 +413,7 @@ abstract class Connection(
             // https://tools.ietf.org/html/draft-ietf-quic-transport-31#section-10.1
             // "An endpoint restarts its idle timer when a packet from its peer is received
             // and processed successfully."
-            packetIdleProcessed()
+            lastIdleAction = TimeSource.Monotonic.markNow()
         } else if (state.isClosing) {
             // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2.1
             // "An endpoint in the closing state sends a packet containing a CONNECTION_CLOSE
@@ -638,57 +635,35 @@ abstract class Connection(
 
     @OptIn(ExperimentalAtomicApi::class)
     private fun setIdleTimeout(idleTimeoutInMillis: Long) {
-        if (!enabledIdle.exchange(true)) {
-            lastIdleAction = TimeSource.Monotonic.markNow()
-            // https://tools.ietf.org/html/draft-ietf-quic-transport-31#section-10.1
-            // To avoid excessively small idle timeout periods, endpoints MUST increase
-            // the idle timeout period to be at least three times the current Probe Timeout (PTO)
-            idleTimeout.store(max(idleTimeoutInMillis, (3L * pto)))
-        }
+
+        lastIdleAction = TimeSource.Monotonic.markNow()
+        // https://tools.ietf.org/html/draft-ietf-quic-transport-31#section-10.1
+        // To avoid excessively small idle timeout periods, endpoints MUST increase
+        // the idle timeout period to be at least three times the current Probe Timeout (PTO)
+        idleTimeout.store(max(idleTimeoutInMillis, (3L * pto)))
+
     }
 
     @OptIn(ExperimentalAtomicApi::class)
     private suspend fun checkIdle() {
-        if (enabledIdle.load()) {
 
-            if (lastIdleAction.elapsedNow().inWholeMilliseconds > idleTimeout.load()) {
-                enabledIdle.store(false)
 
-                // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.1
-                // "If a max_idle_timeout is specified by either peer (...), the connection is silently
-                // closed and its state is
-                //  discarded when it remains idle for longer than the minimum of both
-                //  peers max_idle_timeout values."
-                debug("Idle timeout: silently closing connection $remoteAddress")
+        if (lastIdleAction.elapsedNow().inWholeMilliseconds > idleTimeout.load()) {
+            lastIdleAction = TimeSource.Monotonic.markNow() // to prevent closing again
 
-                clearRequests()
-                terminate()
-            }
+            // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.1
+            // "If a max_idle_timeout is specified by either peer (...), the connection is silently
+            // closed and its state is
+            //  discarded when it remains idle for longer than the minimum of both
+            //  peers max_idle_timeout values."
+            debug("Idle timeout: silently closing connection $remoteAddress")
+
+            clearRequests()
+            terminate()
         }
+
     }
 
-    @OptIn(ExperimentalAtomicApi::class)
-    private fun packetIdleProcessed() {
-        if (enabledIdle.load()) {
-            // https://tools.ietf.org/html/draft-ietf-quic-transport-31#section-10.1
-            // "An endpoint restarts its idle timer when a packet from its peer is received
-            // and processed successfully."
-            lastIdleAction = TimeSource.Monotonic.markNow()
-        }
-    }
-
-    @OptIn(ExperimentalAtomicApi::class)
-    private fun packetIdleSent(packet: Packet, sendTime: TimeSource.Monotonic.ValueTimeMark) {
-        if (enabledIdle.load()) {
-            // https://tools.ietf.org/html/draft-ietf-quic-transport-31#section-10.1
-            // "An endpoint also restarts its idle timer when sending an ack-eliciting packet
-            // if no other ack-eliciting packets have been sent since last receiving and
-            // processing a packet. "
-            if (isAckEliciting(packet)) {
-                lastIdleAction = sendTime
-            }
-        }
-    }
 
     @OptIn(ExperimentalAtomicApi::class)
     suspend fun runRequester(): Unit = coroutineScope {
@@ -737,7 +712,6 @@ abstract class Connection(
 
                 idleCounter.store(0)
 
-                packetIdleSent(packet, timeSent)
             }
         }
     }

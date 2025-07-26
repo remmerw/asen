@@ -33,7 +33,7 @@ internal data class AlpnRequester(
     }
 
     fun throwable(throwable: Throwable) {
-        debug(throwable)
+        debug("Error alpn requester" + throwable.message)
         streamState.reset()
         requester.done()
     }
