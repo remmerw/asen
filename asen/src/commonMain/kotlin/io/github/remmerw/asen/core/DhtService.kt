@@ -14,7 +14,6 @@ import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
@@ -76,25 +75,26 @@ internal fun CoroutineScope.closestPeers(asen: Asen, key: Key):
         if (hasPeer) {
             if (done.add(nextPeer.peeraddr)) {
 
+                semaphore.acquire()
                 launch {
-                    semaphore.withPermit {
-                        try {
-                            val connection = connect(asen, nextPeer.peeraddr)
-                            val msg = request(connection, message)
+                    try {
+                        val connection = connect(asen, nextPeer.peeraddr)
+                        val msg = request(connection, message)
 
-                            if (nextPeer.replaceable) {
-                                send(connection)
-                            }
-
-                            val res = evalClosestPeers(msg, peers, key)
-                            if (res.isNotEmpty()) {
-                                if (nextPeer.replaceable) {
-                                    asen.peerStore().store(nextPeer.peeraddr)
-                                }
-                            }
-                        } catch (_: Throwable) {
-                            // ignore exceptions
+                        if (nextPeer.replaceable) {
+                            send(connection)
                         }
+
+                        val res = evalClosestPeers(msg, peers, key)
+                        if (res.isNotEmpty()) {
+                            if (nextPeer.replaceable) {
+                                asen.peerStore().store(nextPeer.peeraddr)
+                            }
+                        }
+                    } catch (_: Throwable) {
+                        // ignore exceptions
+                    } finally {
+                        semaphore.release()
                     }
                 }
             }
