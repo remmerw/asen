@@ -130,7 +130,7 @@ private fun createFindNodeMessage(key: Key): Message {
 
 
 @OptIn(ExperimentalSerializationApi::class)
-private suspend fun request(connection: Connection, message: Message): Message {
+private fun request(connection: Connection, message: Message): Message {
     val msg = ProtoBuf.encodeToByteArray<Message>(message)
     val data = createStream(connection)
         .request(

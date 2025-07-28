@@ -123,7 +123,7 @@ internal suspend fun connectHop(
 
 
 @OptIn(ExperimentalSerializationApi::class)
-internal suspend fun reserveHop(connection: Connection, self: PeerId) {
+internal fun reserveHop(connection: Connection, self: PeerId) {
 
     val hopMessage = HopMessage(
         type = HopMessage.Type.RESERVE,

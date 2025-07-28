@@ -12,7 +12,7 @@ import io.github.remmerw.asen.quic.Requester
 import io.github.remmerw.asen.quic.Stream
 
 
-internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
+internal fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
 
     val protocols = Protocols()
     protocols.put(MULTISTREAM_PROTOCOL, StreamHandler())
@@ -28,13 +28,12 @@ internal suspend fun connect(asen: Asen, peeraddr: Peeraddr): Connection {
 }
 
 
-suspend fun createStream(connection: Connection, requester: Requester): Stream {
+fun createStream(connection: Connection, requester: Requester): Stream {
     return connection.createStream({ stream: Stream ->
         AlpnRequester(stream, requester, AlpnState(requester))
     }, true)
 }
 
-
-suspend fun createStream(connection: Connection): Stream {
+fun createStream(connection: Connection): Stream {
     return connection.createStream({ stream: Stream -> RequestResponse(stream) }, true)
 }

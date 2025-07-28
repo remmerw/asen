@@ -21,7 +21,7 @@ internal fun identify(
 
 
 @OptIn(ExperimentalSerializationApi::class)
-internal suspend fun identify(connection: Connection): Identify {
+internal fun identify(connection: Connection): Identify {
     val data = createStream(connection)
         .request(
             TIMEOUT.toLong(), encode(

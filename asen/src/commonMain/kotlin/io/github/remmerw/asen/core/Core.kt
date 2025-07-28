@@ -389,7 +389,7 @@ internal suspend fun doReservations(
 }
 
 
-private suspend fun makeReservation(asen: Asen, connection: Connection): Boolean {
+private fun makeReservation(asen: Asen, connection: Connection): Boolean {
     try {
         reserveHop(connection, asen.peerId())
         connection.enableKeepAlive()

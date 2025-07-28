@@ -154,7 +154,7 @@ class Asen internal constructor(
         return keys.peerId
     }
 
-    suspend fun shutdown() {
+    fun shutdown() {
         try {
             connector.shutdown()
         } catch (throwable: Throwable) {
