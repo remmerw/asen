@@ -85,7 +85,7 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
 
     }
 
-    suspend fun detectLostPackets() {
+    fun detectLostPackets() {
         if (isStopped) {
             return
         }
@@ -128,7 +128,7 @@ internal class LossDetector(private val connectionFlow: ConnectionFlow) {
         return p.timeSent.elapsedNow().inWholeMilliseconds > lossDelay
     }
 
-    private suspend fun declareLost(packetStatus: PacketStatus) {
+    private fun declareLost(packetStatus: PacketStatus) {
         if (isAckEliciting(packetStatus.packet)) {
             connectionFlow.registerLost(packetStatus)
         }

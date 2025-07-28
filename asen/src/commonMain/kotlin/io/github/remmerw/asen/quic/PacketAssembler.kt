@@ -19,7 +19,7 @@ internal class PacketAssembler internal constructor(
      *
      * @param scid can be null when encryption level is 1-rtt; but not for the other levels; can be empty array though
      */
-    suspend fun assemble(
+    fun assemble(
         remainingCwndSize: Int,
         availablePacketSize: Int,
         scid: Number?,

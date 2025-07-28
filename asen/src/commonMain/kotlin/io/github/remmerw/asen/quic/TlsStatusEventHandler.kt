@@ -6,8 +6,8 @@ package io.github.remmerw.asen.quic
 internal interface TlsStatusEventHandler {
     fun handshakeSecretsKnown()
 
-    suspend fun handshakeFinished()
+    fun handshakeFinished()
 
-    suspend fun extensionsReceived(extensions: List<Extension>)
+    fun extensionsReceived(extensions: List<Extension>)
 }
 

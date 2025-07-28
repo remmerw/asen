@@ -5,8 +5,8 @@ package io.github.remmerw.asen.quic
 interface Handler {
 
     // is invoked, when the your protocol is requested
-    suspend fun protocol(stream: Stream)
+    fun protocol(stream: Stream)
 
-    suspend fun data(stream: Stream, data: ByteArray)
+    fun data(stream: Stream, data: ByteArray)
 
 }

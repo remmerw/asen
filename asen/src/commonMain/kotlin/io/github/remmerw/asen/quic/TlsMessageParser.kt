@@ -6,7 +6,7 @@ import kotlinx.io.readByteArray
 
 internal data class TlsMessageParser(val customExtensionParser: ExtensionParser) {
 
-    suspend fun parseAndProcessHandshakeMessage(
+    fun parseAndProcessHandshakeMessage(
         buffer: Buffer, messageProcessor: MessageProcessor, protectedBy: ProtectionKeysType
     ) {
         // https://tools.ietf.org/html/rfc8446#section-4

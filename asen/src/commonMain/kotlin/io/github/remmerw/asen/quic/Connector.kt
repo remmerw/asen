@@ -2,16 +2,13 @@ package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
 import io.github.remmerw.borr.PeerId
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
+import java.net.SocketException
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
+import kotlin.math.min
 
 interface Listener {
     fun removeConnection(connection: Connection)
@@ -20,24 +17,66 @@ interface Listener {
 class Connector() : Listener {
     private val connections: MutableMap<InetSocketAddress, Connection> = ConcurrentHashMap()
     private val socket = DatagramSocket()
-    private val scope = CoroutineScope(Dispatchers.IO)
 
-    init {
-        scope.launch {
-            runReceiver()
-        }
+
+    private val receiver = thread(
+        start = true,
+        isDaemon = true,
+        name = "Connector Receiver",
+        priority = Thread.MAX_PRIORITY
+    ) {
+        runReceiver()
     }
+
+    private val maintenance = thread(
+        start = true,
+        isDaemon = true,
+        name = "Dagr Maintenance",
+        priority = Thread.MAX_PRIORITY
+    ) {
+        runMaintenance()
+    }
+
 
     fun connections(): List<Connection> {
         return connections.values.filter { connection -> connection.isConnected }
     }
 
-    suspend fun shutdown() {
+    private fun runMaintenance() {
+        try {
+            while (true) {
+                var delay = 1000
+                connections.values.forEach { connection ->
+                    try {
+                        delay = min(delay, connection.maintenance())
+                    } catch (throwable: Throwable) {
+                        debug(throwable)
+                    }
+                }
+
+                Thread.sleep(delay.toLong())
+            }
+        } catch (_: InterruptedException) {
+        } catch (_: SocketException) {
+        } catch (throwable: Throwable) {
+            debug(throwable)
+            shutdown()
+        }
+    }
+
+
+    fun shutdown() {
         connections.values.forEach { connection: Connection -> connection.close() }
         connections.clear()
 
         try {
-            scope.cancel()
+            receiver.interrupt()
+        } catch (throwable: Throwable) {
+            debug(throwable)
+        }
+
+        try {
+            maintenance.interrupt()
         } catch (throwable: Throwable) {
             debug(throwable)
         }
@@ -49,12 +88,12 @@ class Connector() : Listener {
         }
     }
 
-    private suspend fun runReceiver(): Unit = coroutineScope {
+    private fun runReceiver() {
 
         val data = ByteArray(Settings.MAX_PACKET_SIZE)
 
         try {
-            while (isActive) {
+            while (true) {
                 val receivedPacket = DatagramPacket(data, data.size)
 
                 socket.receive(receivedPacket)
@@ -72,7 +111,10 @@ class Connector() : Listener {
                     debug(throwable)
                 }
             }
-        } catch (_: Throwable) {
+        } catch (_: InterruptedException) {
+        } catch (_: SocketException) {
+        } catch (throwable: Throwable) {
+            debug(throwable)
             shutdown()
         }
     }
@@ -82,7 +124,7 @@ class Connector() : Listener {
         connections.remove(connection.remoteAddress())
     }
 
-    suspend fun connect(
+    fun connect(
         remotePeerId: PeerId,
         remoteAddress: InetSocketAddress,
         protocols: Protocols,
@@ -105,7 +147,6 @@ class Connector() : Listener {
             cipherSuites = listOf(CipherSuite.TLS_AES_128_GCM_SHA256),
             certificate = certificate,
             responder = responder,
-            scope = scope,
             listener = this
         )
         connections.put(remoteAddress, clientConnection)

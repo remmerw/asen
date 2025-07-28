@@ -1,20 +1,20 @@
 package io.github.remmerw.asen.quic
 
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 
 internal class SendRequestQueue {
     private val requestQueue: ArrayDeque<SendRequest> = ArrayDeque()
-    private val mutex = Mutex()
+    private val lock = ReentrantLock()
 
-    suspend fun appendRequest(fixedFrame: Frame) {
-        mutex.withLock {
+    fun appendRequest(fixedFrame: Frame) {
+        lock.withLock {
             requestQueue.addLast(
                 SendRequest(
                     fixedFrame.frameLength(),
                     object : FrameSupplier {
-                        override suspend fun nextFrame(maxSize: Int): Frame? {
+                        override fun nextFrame(maxSize: Int): Frame? {
                             return fixedFrame
                         }
                     }
@@ -22,12 +22,12 @@ internal class SendRequestQueue {
         }
     }
 
-    suspend fun insertRequest(fixedFrame: Frame) {
-        mutex.withLock {
+    fun insertRequest(fixedFrame: Frame) {
+        lock.withLock {
             requestQueue.addFirst(
                 SendRequest(
                     fixedFrame.frameLength(), object : FrameSupplier {
-                        override suspend fun nextFrame(maxSize: Int): Frame? {
+                        override fun nextFrame(maxSize: Int): Frame? {
                             return fixedFrame
                         }
                     }
@@ -42,26 +42,26 @@ internal class SendRequestQueue {
      * This leaves room for the caller to handle uncertainty of how large the frame will be,
      * for example due to a var-length int value that may be larger at the moment the frame
      */
-    suspend fun appendRequest(frameSupplier: FrameSupplier, estimatedSize: Int) {
-        mutex.withLock {
+    fun appendRequest(frameSupplier: FrameSupplier, estimatedSize: Int) {
+        lock.withLock {
             requestQueue.addLast(SendRequest(estimatedSize, frameSupplier))
         }
     }
 
-    suspend fun hasRequests(): Boolean {
-        mutex.withLock {
+    fun hasRequests(): Boolean {
+        lock.withLock {
             return !requestQueue.isEmpty()
         }
     }
 
 
-    suspend fun next(maxFrameLength: Int): SendRequest? {
+    fun next(maxFrameLength: Int): SendRequest? {
         if (maxFrameLength < 1) {  // Minimum frame size is 1: some frames (e.g. ping) are just a payloadType field.
             // Forget it
             return null
         }
 
-        mutex.withLock {
+        lock.withLock {
             val iterator = requestQueue.iterator()
             while (iterator.hasNext()) {
                 val next = iterator.next()
@@ -75,8 +75,8 @@ internal class SendRequestQueue {
         return null
     }
 
-    suspend fun clear() {
-        mutex.withLock {
+    fun clear() {
+        lock.withLock {
             requestQueue.clear()
         }
     }

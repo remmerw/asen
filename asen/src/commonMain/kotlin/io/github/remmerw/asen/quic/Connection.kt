@@ -2,14 +2,12 @@ package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
 import io.github.remmerw.borr.PeerId
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
+import java.net.SocketException
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicInt
@@ -84,7 +82,7 @@ abstract class Connection(
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    private suspend fun keepAlive() {
+    private fun keepAlive() {
         if (enableKeepAlive.load()) {
 
             if (lastPing.elapsedNow().inWholeMilliseconds > Settings.PING_INTERVAL) {
@@ -110,7 +108,7 @@ abstract class Connection(
     val isConnected: Boolean
         get() = state.isConnected
 
-    suspend fun updateConnectionFlowControl(size: Int) {
+    fun updateConnectionFlowControl(size: Int) {
         flowControlMax += size.toLong()
         if (flowControlMax - flowControlLastAdvertised > flowControlIncrement) {
             addRequest(Level.App, createMaxDataFrame(flowControlMax))
@@ -119,14 +117,14 @@ abstract class Connection(
     }
 
 
-    internal suspend fun createStream(
+    internal fun createStream(
         streamHandler: (Stream) -> StreamHandler,
         bidirectional: Boolean
     ): Stream {
         return createStream(this, bidirectional, streamHandler)
     }
 
-    internal suspend fun nextPacket(reader: Reader) {
+    internal fun nextPacket(reader: Reader) {
         if (reader.remaining() < 2) {
             return
         }
@@ -138,7 +136,7 @@ abstract class Connection(
         parsePackets(reader, level, dcid, flags, posFlags)
     }
 
-    private suspend fun parsePackets(
+    private fun parsePackets(
         reader: Reader,
         level: Level, dcid: Number, flags: Byte, posFlags: Int
     ) {
@@ -232,13 +230,13 @@ abstract class Connection(
         }
     }
 
-    suspend fun process(data: ByteArray) {
+    fun process(data: ByteArray) {
         nextPacket(Reader(data, data.size))
     }
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    internal suspend fun processFrames(packetHeader: PacketHeader): Boolean {
+    internal fun processFrames(packetHeader: PacketHeader): Boolean {
         // <a href="https://www.rfc-editor.org/rfc/rfc9000.html#name-terms-and-definitions">...</a>
         // "Ack-eliciting packet: A QUIC packet that contains frames other than ACK, PADDING,
         // and CONNECTION_CLOSE."
@@ -386,10 +384,10 @@ abstract class Connection(
     // https://www.rfc-editor.org/rfc/rfc9000.html#name-path_challenge-frames
     // "The recipient of this frame MUST generate a PATH_RESPONSE frame (...) containing the same
     // Data value."
-    internal abstract suspend fun process(packetHeader: PacketHeader): Boolean
+    internal abstract fun process(packetHeader: PacketHeader): Boolean
 
 
-    internal suspend fun processPacket(packetHeader: PacketHeader) {
+    internal fun processPacket(packetHeader: PacketHeader) {
 
 
         if (!state.closingOrDraining()) {
@@ -424,17 +422,17 @@ abstract class Connection(
 
     }
 
-    internal abstract suspend fun handshakeDone()
+    internal abstract fun handshakeDone()
 
-    internal abstract suspend fun process(
+    internal abstract fun process(
         retireConnectionIdFrame: FrameReceived.RetireConnectionIdFrame,
         dcid: Number
     )
 
-    internal abstract suspend fun process(newConnectionIdFrame: FrameReceived.NewConnectionIdFrame)
+    internal abstract fun process(newConnectionIdFrame: FrameReceived.NewConnectionIdFrame)
 
 
-    private suspend fun process(cryptoFrame: FrameReceived.CryptoFrame, level: Level) {
+    private fun process(cryptoFrame: FrameReceived.CryptoFrame, level: Level) {
         try {
             getCryptoStream(level).add(cryptoFrame)
         } catch (throwable: Throwable) {
@@ -443,7 +441,7 @@ abstract class Connection(
     }
 
 
-    private suspend fun process(maxStreamDataFrame: FrameReceived.MaxStreamDataFrame) {
+    private fun process(maxStreamDataFrame: FrameReceived.MaxStreamDataFrame) {
         try {
             processMaxStreamDataFrame(maxStreamDataFrame)
         } catch (transportError: TransportError) {
@@ -452,14 +450,14 @@ abstract class Connection(
     }
 
 
-    private suspend fun process(pathChallengeFrame: FrameReceived.PathChallengeFrame) {
+    private fun process(pathChallengeFrame: FrameReceived.PathChallengeFrame) {
         // https://www.rfc-editor.org/rfc/rfc9000.html#name-retransmission-of-informati
         // "Responses to path validation using PATH_RESPONSE frames are sent just once."
         addRequest(Level.App, createPathResponseFrame(pathChallengeFrame.data))
     }
 
 
-    private suspend fun process(streamFrame: FrameReceived.StreamFrame) {
+    private fun process(streamFrame: FrameReceived.StreamFrame) {
         try {
             processStreamFrame(this, streamFrame)
         } catch (transportError: TransportError) {
@@ -496,7 +494,7 @@ abstract class Connection(
     }
 
 
-    internal suspend fun immediateCloseWithError(level: Level, transportError: TransportError) {
+    internal fun immediateCloseWithError(level: Level, transportError: TransportError) {
         if (state.closingOrDraining()) {
             debug("Immediate close ignored because already closing")
             return
@@ -530,13 +528,13 @@ abstract class Connection(
         }
     }
 
-    suspend fun scheduleTerminate(pto: Int) {
-        delay(pto.toLong())
+    fun scheduleTerminate(pto: Int) {
+        Thread.sleep(pto.toLong())
         terminate()
     }
 
 
-    private suspend fun handlePacketInClosingState(level: Level) {
+    private fun handlePacketInClosingState(level: Level) {
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2.2
         // "An endpoint MAY enter the draining state from the closing state if it receives
         // a CONNECTION_CLOSE frame, which indicates that the peer is also closing or draining."
@@ -548,7 +546,7 @@ abstract class Connection(
         // "An endpoint SHOULD limit the rate at which it generates packets in the closing state."
 
         closeFramesSendRateLimiter.execute(object : Limiter {
-            override suspend fun run() {
+            override fun run() {
                 addRequest(
                     level, createConnectionCloseFrame()
                 )
@@ -557,7 +555,7 @@ abstract class Connection(
         // No flush necessary, as this method is called while processing a received packet.
     }
 
-    private suspend fun process(closing: FrameReceived.ConnectionCloseFrame, level: Level) {
+    private fun process(closing: FrameReceived.ConnectionCloseFrame, level: Level) {
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2.2
         // "The draining state is entered once an endpoint receives a CONNECTION_CLOSE frame,
         // which indicates that its peer is closing or draining."
@@ -578,7 +576,7 @@ abstract class Connection(
         }
     }
 
-    private suspend fun drain() {
+    private fun drain() {
         state(State.Draining)
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2
         // "The closing and draining connection states exist to ensure that connections close
@@ -591,7 +589,7 @@ abstract class Connection(
     }
 
 
-    open suspend fun terminate() {
+    open fun terminate() {
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2
         // "Once its closing or draining state ends, an endpoint SHOULD discard all
         // connection state."
@@ -599,7 +597,7 @@ abstract class Connection(
         state(State.Closed)
     }
 
-    suspend fun close() {
+    fun close() {
         // https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-10.2
         immediateCloseWithError(Level.App, TransportError(TransportError.Code.NO_ERROR))
     }
@@ -645,7 +643,7 @@ abstract class Connection(
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    private suspend fun checkIdle() {
+    private fun checkIdle() {
 
 
         if (lastIdleAction.elapsedNow().inWholeMilliseconds > idleTimeout.load()) {
@@ -666,9 +664,9 @@ abstract class Connection(
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    suspend fun runRequester(): Unit = coroutineScope {
+    fun maintenance(): Int {
         try {
-            while (isActive) {
+            while (true) {
                 lossDetection()
                 sendIfAny()
 
@@ -678,14 +676,19 @@ abstract class Connection(
                 val time = min(
                     (Settings.MAX_ACK_DELAY * (idleCounter.load() + 1)),
                     1000
-                ).toLong() // time is max 1s
-                delay(time)
+                ) // time is max 1s
+                return time
             }
-        } catch (_: Throwable) {
+        } catch (_: InterruptedException) {
+        } catch (_: SocketException) {
+        } catch (throwable: Throwable) {
+            debug(throwable)
+            terminate()
         }
+        return 1000
     }
 
-    private suspend fun sendIfAny() {
+    private fun sendIfAny() {
         var items: List<Packet>
         do {
             items = assemblePackets()
@@ -727,7 +730,7 @@ abstract class Connection(
         return marked.load()
     }
 
-    private suspend fun assemblePackets(): List<Packet> {
+    private fun assemblePackets(): List<Packet> {
         val scid = activeScid()
         val dcid = activeDcid()
         val dcidLength = lengthNumber(dcid)

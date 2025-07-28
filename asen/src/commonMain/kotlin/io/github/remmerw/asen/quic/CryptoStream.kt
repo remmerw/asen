@@ -1,11 +1,11 @@
 package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.io.Buffer
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.withLock
 import kotlin.math.min
 
 internal class CryptoStream internal constructor(
@@ -17,7 +17,7 @@ internal class CryptoStream internal constructor(
         if (level == Level.Handshake) ProtectionKeysType.Handshake else if (level == Level.App) ProtectionKeysType.Application else ProtectionKeysType.None
     private val tlsMessageParser: TlsMessageParser
     private val sendQueue: Buffer = Buffer()
-    private val mutex = Mutex()
+    private val lock = ReentrantLock()
 
     @OptIn(ExperimentalAtomicApi::class)
     private val dataToSendOffset = AtomicInt(0)
@@ -34,7 +34,7 @@ internal class CryptoStream internal constructor(
             }
     }
 
-    suspend fun add(cryptoFrame: FrameReceived.CryptoFrame) {
+    fun add(cryptoFrame: FrameReceived.CryptoFrame) {
         if (addFrame(cryptoFrame)) {
             var msgSize = peekMsgSize()
             while (msgSize > 0) {
@@ -77,21 +77,21 @@ internal class CryptoStream internal constructor(
 
     }
 
-    suspend fun write(message: HandshakeMessage) {
+    fun write(message: HandshakeMessage) {
         write(message.bytes)
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    private suspend fun write(data: ByteArray) {
+    private fun write(data: ByteArray) {
         val buffer = Buffer()
         buffer.write(data)
-        mutex.withLock {
+        lock.withLock {
             sendQueue.write(buffer, buffer.size)
         }
         sendStreamSize.fetchAndAdd(data.size)
         sendRequestQueue.appendRequest(
             object : FrameSupplier {
-                override suspend fun nextFrame(maxSize: Int): Frame? {
+                override fun nextFrame(maxSize: Int): Frame? {
                     return sendFrame(maxSize)
                 }
             },
@@ -100,8 +100,8 @@ internal class CryptoStream internal constructor(
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    private suspend fun sendFrame(maxSize: Int): Frame? {
-        mutex.withLock {
+    private fun sendFrame(maxSize: Int): Frame? {
+        lock.withLock {
             val leftToSend = sendStreamSize.load() - dataToSendOffset.load()
             val bytesToSend = min(leftToSend, maxSize - 10)
             if (bytesToSend == 0) {
@@ -111,7 +111,7 @@ internal class CryptoStream internal constructor(
                 // Need (at least) another frame to send all data. Because current method
                 // is the sender callback, flushing sender is not necessary.
                 sendRequestQueue.appendRequest(object : FrameSupplier {
-                    override suspend fun nextFrame(maxSize: Int): Frame? {
+                    override fun nextFrame(maxSize: Int): Frame? {
                         return sendFrame(maxSize)
                     }
                 }, 10)

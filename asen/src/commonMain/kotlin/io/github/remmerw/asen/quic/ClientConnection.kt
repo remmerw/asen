@@ -2,13 +2,10 @@ package io.github.remmerw.asen.quic
 
 import io.github.remmerw.asen.debug
 import io.github.remmerw.borr.PeerId
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.withTimeout
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
@@ -21,19 +18,19 @@ class ClientConnection internal constructor(
     cipherSuites: List<CipherSuite>,
     certificate: Certificate,
     responder: Responder,
-    private val scope: CoroutineScope,
+
     private val listener: Listener
 ) : Connection(version, socket, remotePeerId, remoteAddress, responder) {
 
 
     private val tlsEngine: TlsClientEngine
-    private val handshakeDone = Semaphore(1, 1)
+    private val handshakeDone = Semaphore(0)
     private val transportParams: TransportParameters
 
     private val scidRegistry = ScidRegistry()
     private val dcidRegistry: DcidRegistry
     private val originalDcid: Number
-    private var runRequesterJob: Job? = null
+
 
     /**
      * The maximum numbers of connection IDs this endpoint can use; determined by the TP
@@ -85,7 +82,7 @@ class ClientConnection internal constructor(
     }
 
 
-    suspend fun connect(timeout: Int) {
+    fun connect(timeout: Int) {
 
         try {
             startHandshake()
@@ -95,12 +92,10 @@ class ClientConnection internal constructor(
         }
 
         try {
-            withTimeout(timeout * 1000L) {
-                handshakeDone.acquire()
-                if (state() != State.Connected) {
-                    abortHandshake()
-                    throw Exception("Handshake error state is " + state())
-                }
+            handshakeDone.tryAcquire(timeout.toLong(), TimeUnit.SECONDS)
+            if (state() != State.Connected) {
+                abortHandshake()
+                throw Exception("Handshake error state is " + state())
             }
         } catch (throwable: Throwable) {
             abortHandshake()
@@ -109,19 +104,14 @@ class ClientConnection internal constructor(
     }
 
 
-    private suspend fun startHandshake() {
+    private fun startHandshake() {
         computeInitialKeys(dcidRegistry.initial)
-
-
-        runRequesterJob = scope.launch {
-            runRequester()
-        }
 
         tlsEngine.startHandshake()
     }
 
 
-    private suspend fun abortHandshake() {
+    private fun abortHandshake() {
         state(State.Failed)
         clearRequests()
         terminate()
@@ -142,7 +132,7 @@ class ClientConnection internal constructor(
      * @param cid the connection ID used
      */
     @OptIn(ExperimentalAtomicApi::class)
-    private suspend fun registerCidInUse(cid: Number) {
+    private fun registerCidInUse(cid: Number) {
         if (scidRegistry.registerUsedConnectionId(cid)) {
             // New connection id, not used before.
             // https://www.rfc-editor.org/rfc/rfc9000.html#name-issuing-connection-ids
@@ -155,7 +145,7 @@ class ClientConnection internal constructor(
     }
 
 
-    override suspend fun process(packetHeader: PacketHeader): Boolean {
+    override fun process(packetHeader: PacketHeader): Boolean {
         when (packetHeader.level) {
             Level.Handshake -> {
                 return processFrames(packetHeader)
@@ -174,7 +164,7 @@ class ClientConnection internal constructor(
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    override suspend fun handshakeDone() {
+    override fun handshakeDone() {
 
         if (handshakeState.load().transitionAllowed(HandshakeState.Confirmed)) {
             handshakeState.store(HandshakeState.Confirmed)
@@ -200,14 +190,14 @@ class ClientConnection internal constructor(
      * Send a retire connection ID frame, that informs the peer the given connection ID will not be used by this
      * endpoint anymore for addressing the peer.
      */
-    private suspend fun sendRetireCid(seqNr: Int) {
+    private fun sendRetireCid(seqNr: Int) {
         // https://www.rfc-editor.org/rfc/rfc9000.html#name-retransmission-of-informati
         // "Likewise, retired connection IDs are sent in RETIRE_CONNECTION_ID frames and retransmitted if the packet
         //  containing them is lost."
         sendRequestQueue(Level.App).appendRequest(createRetireConnectionsIdFrame(seqNr))
     }
 
-    override suspend fun process(newConnectionIdFrame: FrameReceived.NewConnectionIdFrame) {
+    override fun process(newConnectionIdFrame: FrameReceived.NewConnectionIdFrame) {
         // https://www.rfc-editor.org/rfc/rfc9000.html#name-new_connection_id-frames
         // "Receiving a value in the Retire Prior To field that is greater than that in the
         // Sequence Number field MUST
@@ -266,7 +256,7 @@ class ClientConnection internal constructor(
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    override suspend fun process(
+    override fun process(
         retireConnectionIdFrame: FrameReceived.RetireConnectionIdFrame,
         dcid: Number
     ) {
@@ -310,7 +300,7 @@ class ClientConnection internal constructor(
     /**
      * Generate, register and send a new connection ID (that identifies this endpoint).
      */
-    private suspend fun sendNewCid() {
+    private fun sendNewCid() {
         val cidInfo = scidRegistry.generateNew()
         val cid = cidInfo.cid().toInt()
         sendRequestQueue(Level.App).appendRequest(
@@ -322,7 +312,7 @@ class ClientConnection internal constructor(
     }
 
 
-    override suspend fun terminate() {
+    override fun terminate() {
         super.terminate()
         listener.removeConnection(this)
 
@@ -330,12 +320,6 @@ class ClientConnection internal constructor(
             handshakeDone.release()
         } catch (_: Throwable) {
         }
-
-        try {
-            runRequesterJob?.cancel()
-        } catch (_: Throwable) {
-        }
-
     }
 
     private fun initialDcid(): Number {
@@ -344,7 +328,7 @@ class ClientConnection internal constructor(
 
 
     @OptIn(ExperimentalAtomicApi::class)
-    private suspend fun validateAndProcess(remoteTransportParameters: TransportParameters) {
+    private fun validateAndProcess(remoteTransportParameters: TransportParameters) {
         if (remoteTransportParameters.maxUdpPayloadSize < 1200) {
             immediateCloseWithError(
                 Level.Handshake,
@@ -491,7 +475,7 @@ class ClientConnection internal constructor(
     }
 
 
-    private suspend fun validateALPN(protocols: Array<String>) {
+    private fun validateALPN(protocols: Array<String>) {
         for (protocol in protocols) {
             if (protocol == Settings.ALPN) {
                 return  // done all good
@@ -521,7 +505,7 @@ class ClientConnection internal constructor(
         }
 
         @OptIn(ExperimentalAtomicApi::class)
-        override suspend fun handshakeFinished() {
+        override fun handshakeFinished() {
             // note this is not 100% correct, it discards only when handshake is finished,
             // not when the first handshake message is written [but fine for now !!!]
 
@@ -569,7 +553,7 @@ class ClientConnection internal constructor(
         }
 
 
-        override suspend fun extensionsReceived(extensions: List<Extension>) {
+        override fun extensionsReceived(extensions: List<Extension>) {
             for (ex in extensions) {
                 when (ex) {
                     is TransportParametersExtension -> {
@@ -593,23 +577,23 @@ class ClientConnection internal constructor(
     }
 
     private inner class CryptoMessageSender : ClientMessageSender {
-        override suspend fun send(clientHello: ClientHello) {
+        override fun send(clientHello: ClientHello) {
             val cryptoStream = getCryptoStream(Level.Initial)
             cryptoStream.write(clientHello)
             state(State.Handshaking)
         }
 
-        override suspend fun send(finishedMessage: FinishedMessage) {
+        override fun send(finishedMessage: FinishedMessage) {
             val cryptoStream = getCryptoStream(Level.Handshake)
             cryptoStream.write(finishedMessage)
         }
 
-        override suspend fun send(certificateMessage: CertificateMessage) {
+        override fun send(certificateMessage: CertificateMessage) {
             val cryptoStream = getCryptoStream(Level.Handshake)
             cryptoStream.write(certificateMessage)
         }
 
-        override suspend fun send(certificateVerifyMessage: CertificateVerifyMessage) {
+        override fun send(certificateVerifyMessage: CertificateVerifyMessage) {
             val cryptoStream = getCryptoStream(Level.Handshake)
             cryptoStream.write(certificateVerifyMessage)
         }

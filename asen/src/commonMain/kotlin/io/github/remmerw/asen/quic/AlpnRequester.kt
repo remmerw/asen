@@ -10,7 +10,7 @@ internal data class AlpnRequester(
     val streamState: StreamState
 ) :
     StreamHandler {
-    override suspend fun data(data: Buffer) {
+    override fun data(data: Buffer) {
         try {
             StreamState.iteration(streamState, stream, data)
         } catch (exception: Exception) {

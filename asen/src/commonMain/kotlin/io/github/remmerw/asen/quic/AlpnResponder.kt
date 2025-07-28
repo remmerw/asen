@@ -8,7 +8,7 @@ internal data class AlpnResponder(
     val responder: Responder,
     val streamState: Libp2pState
 ) : StreamHandler {
-    override suspend fun data(data: Buffer) {
+    override fun data(data: Buffer) {
         try {
             StreamState.iteration(streamState, stream, data)
         } catch (_: Exception) {

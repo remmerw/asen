@@ -48,7 +48,7 @@ internal data class ConnectRequest(
 
 
     @OptIn(ExperimentalSerializationApi::class)
-    override suspend fun data(stream: Stream, data: ByteArray) {
+    override fun data(stream: Stream, data: ByteArray) {
 
         if (stream.isMarked()) {
             val addresses = decodeMessage(target, data)
@@ -77,7 +77,7 @@ internal data class ConnectRequest(
     }
 
 
-    suspend fun initializeConnect(stream: Stream) {
+    fun initializeConnect(stream: Stream) {
         stream.writeOutput(
             true,
             encodeMessage(
