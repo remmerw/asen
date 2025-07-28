@@ -31,7 +31,7 @@ class Connector() : Listener {
     private val maintenance = thread(
         start = true,
         isDaemon = true,
-        name = "Dagr Maintenance",
+        name = "Connector Maintenance",
         priority = Thread.MAX_PRIORITY
     ) {
         runMaintenance()
@@ -44,7 +44,7 @@ class Connector() : Listener {
 
     private fun runMaintenance() {
         try {
-            while (true) {
+            while (!Thread.interrupted()) {
                 var delay = 1000
                 connections.values.forEach { connection ->
                     try {
@@ -93,7 +93,7 @@ class Connector() : Listener {
         val data = ByteArray(Settings.MAX_PACKET_SIZE)
 
         try {
-            while (true) {
+            while (!Thread.interrupted()) {
                 val receivedPacket = DatagramPacket(data, data.size)
 
                 socket.receive(receivedPacket)
