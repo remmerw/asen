@@ -18,15 +18,13 @@ import io.github.remmerw.asen.identifyPeerId
 import io.github.remmerw.asen.quic.SignatureScheme
 import io.github.remmerw.borr.Keys
 import io.github.remmerw.borr.sign
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
-import kotlinx.datetime.toLocalDateTime
+import java.time.ZoneId
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 
 // The libp2p handshake uses TLS 1.3 (and higher). Endpoints MUST NOT negotiate lower TLS versions.
@@ -86,9 +84,12 @@ internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.quic.Certif
 
 
     val now: Instant = Clock.System.now()
+    now.plus(365.days).toJavaInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
 
-    val notBefore = now.minus(1, DateTimeUnit.YEAR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC)
-    val notAfter = now.plus(99, DateTimeUnit.YEAR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC)
+    val notBefore = now.minus(1.days).toJavaInstant()
+        .atZone(ZoneId.systemDefault()).toLocalDateTime()
+    val notAfter = now.plus(365.days).toJavaInstant()
+        .atZone(ZoneId.systemDefault()).toLocalDateTime()
 
 
     val provider = CryptographyProvider.Default

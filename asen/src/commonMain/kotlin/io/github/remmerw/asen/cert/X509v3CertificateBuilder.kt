@@ -4,9 +4,9 @@ import dev.whyoleg.cryptography.algorithms.ECDSA
 import dev.whyoleg.cryptography.algorithms.ECDSA.PrivateKey
 import dev.whyoleg.cryptography.algorithms.SHA256
 import dev.whyoleg.cryptography.bigint.BigInt
-import kotlinx.datetime.LocalDateTime
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
+import java.time.LocalDateTime
 
 /**
  * class to produce an X.509 Version 3 certificate.
@@ -31,8 +31,11 @@ class X509v3CertificateBuilder private constructor(
      * @param publicKeyInfo the info structure for the public key to be associated with this certificate.
      */
     internal constructor(
-        issuer: X500Name, serial: BigInt, notBefore: LocalDateTime,
-        notAfter: LocalDateTime, subject: X500Name,
+        issuer: X500Name,
+        serial: BigInt,
+        notBefore: LocalDateTime,
+        notAfter: LocalDateTime,
+        subject: X500Name,
         publicKeyInfo: SubjectPublicKeyInfo
     ) : this(
         issuer, serial, Time(notBefore), Time(notAfter),

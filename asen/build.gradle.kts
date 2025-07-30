@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.remmerw"
-version = "0.4.4"
+version = "0.4.5"
 
 kotlin {
 
@@ -41,10 +41,8 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.kotlinx.serialization.protobuf)
-                implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.cryptography.core)
-                implementation(libs.cryptography.bigint)
                 implementation(libs.hmac.sha2)
 
 

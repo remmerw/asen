@@ -1,9 +1,8 @@
 package io.github.remmerw.asen.cert
 
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.format
-import kotlinx.datetime.format.FormatStringsInDatetimeFormats
-import kotlinx.datetime.format.byUnicodePattern
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 
 class Time : ASN1Object, ASN1Choice {
     private val time: ASN1Primitive
@@ -25,11 +24,8 @@ class Time : ASN1Object, ASN1Choice {
     constructor(time: LocalDateTime) {
         val formatPattern = "yyyyMMddHHmmss"
 
-        @OptIn(FormatStringsInDatetimeFormats::class)
-        val format = LocalDateTime.Format {
-            byUnicodePattern(formatPattern)
-        }
 
+        val format = DateTimeFormatter.ofPattern(formatPattern)
 
         val d = time.format(format) + "Z"
         val year = d.substring(0, 4).toInt()
