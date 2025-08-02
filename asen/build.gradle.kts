@@ -46,8 +46,8 @@ kotlin {
                 implementation(libs.hmac.sha2)
 
 
-                implementation("io.github.remmerw:frey:0.2.0")
-                implementation("io.github.remmerw:borr:0.0.4")
+                implementation(libs.frey)
+                implementation(libs.borr)
             }
         }
 
@@ -71,7 +71,7 @@ kotlin {
 
         androidInstrumentedTest.dependencies {
             implementation(libs.kotlin.test)
-            implementation("androidx.test:runner:1.6.2")
+            implementation(libs.runner)
         }
 
         androidUnitTest.dependencies {
@@ -91,9 +91,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
-    }
-    packaging {
-        resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
     }
 }
 
