@@ -1,34 +1,18 @@
 package io.github.remmerw.asen
 
-import io.github.remmerw.borr.PeerId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class Examples {
 
-    @OptIn(ExperimentalAtomicApi::class)
     @Test
     fun resolveAddresses(): Unit = runBlocking(Dispatchers.IO) {
 
-        val connectId = AtomicReference<PeerId?>(null)
-
-        val bob = newAsen(holePunch = object : HolePunch {
-            override fun invoke(
-                peerId: PeerId,
-                addresses: List<InetSocketAddress>
-            ) {
-                connectId.store(peerId)
-                debug("Peer $peerId wants to connect with $addresses")
-            }
-
-        })
+        val bob = newAsen()
         val alice = newAsen()
 
         val addresses = bob.observedAddresses()
@@ -53,7 +37,6 @@ class Examples {
 
         // [2] alice can find bob addresses via its peerId
 
-
         val alicPublicAddresses = addresses.map { address ->
             InetSocketAddress(address, 7777) // 7777 alice server
         }
@@ -66,10 +49,6 @@ class Examples {
         // testing
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses
         assertTrue(peeraddrs.isNotEmpty())
-
-        // testing that alice actually wants to connect to bob
-
-        assertEquals(connectId.load(), alice.peerId())
 
         bob.shutdown()
         alice.shutdown()

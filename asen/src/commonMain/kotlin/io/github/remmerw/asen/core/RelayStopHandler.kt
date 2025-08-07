@@ -1,6 +1,5 @@
 package io.github.remmerw.asen.core
 
-import io.github.remmerw.asen.HolePunch
 import io.github.remmerw.asen.debug
 import io.github.remmerw.asen.parsePeerId
 import io.github.remmerw.asen.quic.Handler
@@ -12,7 +11,6 @@ import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 
 internal data class RelayStopHandler(
-    private val holePunch: HolePunch,
     private val self: PeerId,
     private val signatureMessage: SignatureMessage
 ) :
@@ -36,13 +34,13 @@ internal data class RelayStopHandler(
                 encodeMessage(signatureMessage)
             )
 
+            /* deactivate the incoming addresses for now
             try {
                 val peerId = stream.marked()!!
                 val addresses = decodeMessage(peerId, data)
-                holePunch.invoke(peerId, addresses)
             } catch (throwable: Throwable) {
                 debug(throwable)
-            }
+            } */
 
         } else {
             try {

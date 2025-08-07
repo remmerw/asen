@@ -24,10 +24,6 @@ a connection via the relay.
 Via the relay connection peer (A) receive from peer (B) its public addresses. The
 relay connection is immediately closed after that.
 
-**Limitation** The **libp2p** network protocol stack offers the possibility to establish a
-direct connection between peer (A) and peer (B) via a **hole punch** mechanism. This mechanism seems
-not very stable in the mobile context, so its not part of the library.
-
 ### ALPN "libp2p"
 
 Application-Layer Protocol Negotiation (ALPN) is a Transport Layer Security (TLS) extension that
@@ -115,13 +111,9 @@ val bootstrap = bootstrap()
 // Storage for DHT peers
 val peerStore = MemoryPeers()
 
-// holepunch notification 
-val holePunch = DisabledHolePunch()
-
 val asen = newAsen(keys = keys, 
     bootstrap = bootstrap, 
-    peerStore = peerStore,
-    holePunch = holePunch)
+    peerStore = peerStore)
 
 // -> or the shortform, which does the same settings
 val asen = newAsen()
@@ -137,13 +129,11 @@ val asen = newAsen()
  * @param keys public and private ed25519 keys for the peer ID, signing, verification and authentication
  * @param bootstrap initial bootstrap peers for the DHT (without bootstrap peers it can only be used for testing)
  * @param peerStore additional DHT peers (note it will be filled and readout during DHT operations)
- * @param holePunch Notification for doing hole punching
  */
 fun newAsen(
     keys: Keys = generateKeys(),
     bootstrap: List<Peeraddr> = bootstrap(),
-    peerStore: PeerStore = MemoryPeers(),
-    holePunch: HolePunch = DisabledHolePunch()
+    peerStore: PeerStore = MemoryPeers()
 ): Asen {
 ...
 }
@@ -174,16 +164,17 @@ To resolve the peer addresses the ID of the peer is required (peerId). A peerId 
 Ed25519 public key, which will also be used for signing content and authentication.
 
 ```
-    /**
+   /**
      * Resolve the addresses of given target peer ID via the **libp2p** relay mechanism.
      *
      * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
      * @param publicAddresses Own public addresses used for hole punching [Note: default empty
-     * hole punching is deactivated]
+     * hole punching is deactivated, currently it is not used]
      * @return list of the addresses (usually one IPv6 address)
      */
-     suspend fun resolveAddresses(target: PeerId, timeout: Long): List<SocketAddress> {
+     suspend fun resolveAddresses(target: PeerId, timeout: Long, 
+        publicAddresses: List<InetSocketAddress> = emptyList() ): List<SocketAddress> {
          ...
     }
 ```
@@ -240,18 +231,7 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
     @Test
     fun resolveAddresses(): Unit = runBlocking(Dispatchers.IO) {
 
-         val connectId = AtomicReference<PeerId?>(null)
-
-        val bob = newAsen(holePunch = object : HolePunch {
-            override fun invoke(
-                peerId: PeerId,
-                addresses: List<InetSocketAddress>
-            ) {
-                connectId.store(peerId)
-                debug("Peer $peerId wants to connect with $addresses")
-            }
-
-        })
+        val bob = newAsen()
         val alice = newAsen()
 
         val addresses = bob.observedAddresses()
@@ -276,7 +256,6 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
 
         // [2] alice can find bob addresses via its peerId
 
-
         val alicPublicAddresses = addresses.map { address ->
             InetSocketAddress(address, 7777) // 7777 alice server
         }
@@ -289,10 +268,6 @@ under [circuit-v2](https://github.com/libp2p/specs/blob/master/relay/circuit-v2.
         // testing
         assertNotNull(peeraddrs) // peeraddrs are the public IP addresses
         assertTrue(peeraddrs.isNotEmpty())
-
-        // testing that alice actually wants to connect to bob
-
-        assertEquals(connectId.load(), alice.peerId())
 
         bob.shutdown()
         alice.shutdown()

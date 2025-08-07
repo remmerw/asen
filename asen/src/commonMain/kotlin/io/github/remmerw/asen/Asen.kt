@@ -42,25 +42,11 @@ interface PeerStore {
     suspend fun store(peeraddr: Peeraddr)
 }
 
-class DisabledHolePunch : HolePunch {
-    override fun invoke(
-        peerId: PeerId,
-        addresses: List<InetSocketAddress>
-    ) {
-        debug("Peer $peerId wants to connect with $addresses")
-    }
-}
-
-interface HolePunch {
-    fun invoke(peerId: PeerId, addresses: List<InetSocketAddress>)
-}
-
 class Asen internal constructor(
     private val keys: Keys,
     private val certificate: Certificate,
     private val bootstrap: List<Peeraddr>,
-    private val peerStore: PeerStore,
-    private val holePunch: HolePunch
+    private val peerStore: PeerStore
 ) {
     private val connector: Connector = Connector()
     private val mutex = Mutex()
@@ -78,7 +64,7 @@ class Asen internal constructor(
      * @param target the target peer ID which addresses should be resolved
      * @param timeout in seconds
      * @param publicAddresses Own public addresses used for hole punching [Note: default empty
-     * hole punching is deactivated]
+     * hole punching is deactivated, currently it is not used]
      * @return list of the addresses (usually one IPv6 address)
      */
     @OptIn(ExperimentalAtomicApi::class)
@@ -170,10 +156,6 @@ class Asen internal constructor(
         return bootstrap
     }
 
-    fun holePunch(): HolePunch {
-        return holePunch
-    }
-
     internal fun connector(): Connector {
         return connector
     }
@@ -194,15 +176,13 @@ class Asen internal constructor(
  * @param keys public and private ed25519 keys for the peer ID, signing, verification and authentication
  * @param bootstrap initial bootstrap peers for the DHT (without bootstrap peers it can only be used for testing)
  * @param peerStore additional DHT peers (note it will be filled and readout during DHT operations)
- * @param holePunch Notification for doing hole punching
  */
 fun newAsen(
     keys: Keys = generateKeys(),
     bootstrap: List<Peeraddr> = bootstrap(),
-    peerStore: PeerStore = MemoryPeers(),
-    holePunch: HolePunch = DisabledHolePunch()
+    peerStore: PeerStore = MemoryPeers()
 ): Asen {
-    return Asen(keys, createCertificate(keys), bootstrap, peerStore, holePunch)
+    return Asen(keys, createCertificate(keys), bootstrap, peerStore)
 }
 
 class MemoryPeers : PeerStore {

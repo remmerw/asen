@@ -682,7 +682,7 @@ abstract class Connection(
         } catch (_: InterruptedException) {
         } catch (_: SocketException) {
         } catch (throwable: Throwable) {
-            debug("Address" + remoteAddress+ " : error " + throwable.message)
+            debug("Address" + remoteAddress + " : error " + throwable.message)
             terminate()
         }
         return 1000
