@@ -84,7 +84,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             ...
-            implementation("io.github.remmerw:asen:0.4.9")
+            implementation("io.github.remmerw:asen:0.5.0")
         }
         ...
     }
