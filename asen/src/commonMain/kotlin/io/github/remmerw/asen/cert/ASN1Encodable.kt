@@ -1,7 +1,7 @@
 package io.github.remmerw.asen.cert
 
 /**
- * Basic interface to produce serialisers for ASN.1 encodings.
+ * Basic interface to produce serializers for ASN.1 encodings.
  */
 interface ASN1Encodable {
     /**

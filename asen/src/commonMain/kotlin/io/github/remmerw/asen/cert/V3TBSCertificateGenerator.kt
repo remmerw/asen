@@ -67,7 +67,7 @@ class V3TBSCertificateGenerator {
             !((serialNumber == null) || (signature == null)
                     || (issuer == null) || (startDate == null) || (endDate == null)
                     || (subjectPublicKeyInfo == null))
-        ) { "not all mandatory fields set in V3 TBScertificate generator" }
+        ) { "not all mandatory fields set in V3 TBSCertificate generator" }
 
         val v = ASN1EncodableVector()
 

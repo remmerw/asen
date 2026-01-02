@@ -9,7 +9,7 @@ package io.github.remmerw.asen.cert
  *
  *
  * For short: Constructing this form does sort the supplied elements,
- * and the sorting happens also before serialization (if necesssary).
+ * and the sorting happens also before serialization (if necessary).
  * This is different from the way  does things.
  *
  */

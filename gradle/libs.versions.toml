@@ -1,9 +1,8 @@
 [versions]
-agp = "8.12.0"
+agp = "8.13.2"
 frey = "0.2.0"
-borr = "0.0.4"
-kotlin = "2.2.0"
-runner = "1.7.0"
+borr = "0.0.6"
+kotlin = "2.3.0"
 
 [libraries]
 borr = { module = "io.github.remmerw:borr", version.ref = "borr" }
@@ -14,12 +13,11 @@ kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-seria
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
 cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version = "0.5.0" }
 cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version = "0.5.0" }
-hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version = "0.7.0" }
-runner = { module = "androidx.test:runner", version.ref = "runner" }
+hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version = "0.8.0" }
 
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
+androidLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.35.0" }

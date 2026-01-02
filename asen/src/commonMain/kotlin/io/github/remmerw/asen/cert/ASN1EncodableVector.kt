@@ -1,7 +1,7 @@
 package io.github.remmerw.asen.cert
 
 /**
- * Mutable class for building ASN.1 constructed objects such as SETs or SEQUENCEs.
+ * Mutable class for building ASN.1 constructed objects such as SETs or SEQUENCE's.
  */
 class ASN1EncodableVector {
     private var elements: MutableList<ASN1Encodable> = mutableListOf()

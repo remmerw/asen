@@ -15,10 +15,10 @@ package io.github.remmerw.asen.cert
  *
  * **8: Basic encoding rules**
  *
- * **8.7 Encoding of an octetstring value**
+ * **8.7 Encoding of an octet string value**
  *
  *
- * **8.7.1** The encoding of an octetstring value shall be
+ * **8.7.1** The encoding of an octet string value shall be
  * either primitive or constructed at the option of the sender.
  * <blockquote>
  * NOTE  Where it is necessary to transfer part of an octet string
@@ -44,7 +44,7 @@ package io.github.remmerw.asen.cert
 </blockquote> *
  *
  *
- * **8.7.3.1** To encode an octetstring value in this way,
+ * **8.7.3.1** To encode an octet string value in this way,
  * it is segmented. Each segment shall consist of a series of
  * consecutive octets of the value. There shall be no significance
  * placed on the segment boundaries.
@@ -54,10 +54,10 @@ package io.github.remmerw.asen.cert
  *
  *
  * **8.7.3.2** Each encoding in the contents octets shall represent
- * a segment of the overall octetstring, the encoding arising from
+ * a segment of the overall octet string, the encoding arising from
  * a recursive application of this subclause.
  * In this recursive application, each segment is treated as if it were
- * a octetstring value. The encodings of the segments shall appear in the contents
+ * a octet string value. The encodings of the segments shall appear in the contents
  * octets in the order in which their octets appear in the overall value.
  *
  * <blockquote>

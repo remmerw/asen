@@ -38,7 +38,7 @@ class TBSCertificate private constructor(seq: ASN1Sequence) : ASN1Object() {
         var seqStart = 0
 
         //
-        // some certficates don't include a version number - we assume v1
+        // some certificates don't include a version number - we assume v1
         //
         if (seq.getObjectAt(0) is ASN1TaggedObject) {
             version = ASN1Integer.getInstance(seq.getObjectAt(0) as ASN1TaggedObject)
