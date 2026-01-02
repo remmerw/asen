@@ -133,7 +133,7 @@ internal fun generateCertificate(keys: Keys): io.github.remmerw.asen.quic.Certif
     //  algorithm             OBJECT IDENTIFIER,
     //  parameters            ANY DEFINED BY algorithm OPTIONAL
     // }
-    val subjectPublicKeyInfo = SubjectPublicKeyInfo.Companion.getInstance(
+    val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
         pubKey.encodeToByteArrayBlocking(EC.PublicKey.Format.DER)
     )
 

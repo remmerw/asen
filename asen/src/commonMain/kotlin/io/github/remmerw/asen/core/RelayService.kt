@@ -57,8 +57,6 @@ internal data class ConnectRequest(
         } else {
 
             val msg = ProtoBuf.decodeFromByteArray<HopMessage>(data)
-            checkNotNull(msg)
-
             if (msg.type != HopMessage.Type.STATUS) {
                 done()
                 stream.close()
