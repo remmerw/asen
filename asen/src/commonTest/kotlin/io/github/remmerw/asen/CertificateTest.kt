@@ -10,8 +10,8 @@ class CertificateTest {
     fun createCertificate() {
         val keys = generateKeys()
         val cert = generateCertificate(keys)
-        checkNotNull(cert)
+        checkNotNull(cert.x509)
         val encoded = cert.x509.encoded()
-        checkNotNull(encoded)
+        checkNotNull(encoded.toString())
     }
 }

@@ -14,7 +14,7 @@ class AlgorithmIdentifier : ASN1Object {
     }
 
     private constructor(seq: ASN1Sequence) {
-        require(!(seq.size() < 1 || seq.size() > 2)) {
+        require(seq.size() in 1..2) {
             ("Bad sequence size: "
                     + seq.size())
         }

@@ -93,7 +93,7 @@ internal class TlsClientEngine(
         // https://tools.ietf.org/html/rfc8446#section-4.2.1
         // "A server which negotiates TLS 1.3 MUST respond by sending a "supported_versions" extension containing the selected version value (0x0304)."
         val tlsVersion = serverHello.extensions
-            .filter { extension: Extension? -> extension is SupportedVersionsExtension }
+            .filterIsInstance<SupportedVersionsExtension>()
             .map { extension: Extension -> (extension as SupportedVersionsExtension).tlsVersion }
             .first()
 
@@ -112,12 +112,12 @@ internal class TlsClientEngine(
         }
 
         val keyShare = serverHello.extensions
-            .filter { extension: Extension? -> extension is KeyShareExtension }  // In the context of a server hello, the key share extension contains exactly one key share entry
+            .filterIsInstance<KeyShareExtension>()  // In the context of a server hello, the key share extension contains exactly one key share entry
             .map { extension: Extension -> (extension as KeyShareExtension).keyShareEntries[0] }
 
 
         val preSharedKey = serverHello.extensions
-            .filter { extension: Extension? -> extension is ServerPreSharedKeyExtension }
+            .filterIsInstance<ServerPreSharedKeyExtension>()
 
 
         // https://tools.ietf.org/html/rfc8446#section-4.1.3

@@ -22,7 +22,7 @@ internal class Reader(val data: ByteArray, val size: Int) {
     }
 
     fun skip(length: Int) {
-        pos = pos + length
+        pos += length
     }
 
     fun position(pos: Int) {

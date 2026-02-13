@@ -141,7 +141,7 @@ enum class Status {
     MALFORMED_MESSAGE,
 
     @ProtoNumber(401)
-    UNEXPECTED_MESSAGE()
+    UNEXPECTED_MESSAGE
 }
 
 @Serializable

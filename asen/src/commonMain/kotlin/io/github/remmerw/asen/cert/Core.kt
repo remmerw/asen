@@ -231,11 +231,7 @@ fun getSequenceInstance(obj: Any): ASN1Sequence {
 
         is ASN1Encodable -> {
             val primitive = obj.toASN1Primitive()
-            if (primitive is ASN1Sequence) {
-                primitive
-            } else {
-                throw IllegalArgumentException("unknown object in getInstance ")
-            }
+            primitive as? ASN1Sequence ?: throw IllegalArgumentException("unknown object in getInstance ")
         }
 
         is ByteArray -> {
