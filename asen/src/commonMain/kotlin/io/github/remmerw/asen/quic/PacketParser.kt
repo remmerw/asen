@@ -189,7 +189,7 @@ internal object PacketParser {
                 // https://tools.ietf.org/html/draft-ietf-quic-transport-27#section-17.2
                 // "In QUIC version 1, this value MUST NOT exceed 20.  Endpoints that receive a version 1
                 // long header with a value larger than 20 MUST drop the packet."
-                if (dstConnIdLength < 0 || dstConnIdLength > 20) {
+                if (dstConnIdLength !in 0..20) {
                     return null
                 }
                 if (reader.remaining() < dstConnIdLength) {

@@ -57,7 +57,7 @@ class DERSet : ASN1Set {
      * As DER requires the constructed, definite-length model to
      * be used for structured types, this varies slightly from the
      * ASN.1 descriptions given. Rather than just outputting SET,
-     * we also have to specify CONSTRUCTED, and the objects length.
+     * we also have to specify CONSTRUCTED, and the objects' length.
      */
 
     override fun encode(out: ASN1OutputStream, withTag: Boolean) {

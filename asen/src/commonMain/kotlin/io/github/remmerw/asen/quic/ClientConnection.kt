@@ -245,7 +245,7 @@ class ClientConnection internal constructor(
         // IDs, if the number of
         // active connection IDs exceeds the value advertised in its active_connection_id_limit
         // transport parameter, an
-        // endpoint MUST close the connection with an error of payloadType CONNECTION_ID_LIMIT_ERROR."
+        // endpoint MUST close the connection with an error of payloadType CONNECTION_ID_LIMIT_ERROR "
         if (dcidRegistry.activeCids > Settings.ACTIVE_CONNECTION_ID_LIMIT) {
             immediateCloseWithError(
                 Level.App,

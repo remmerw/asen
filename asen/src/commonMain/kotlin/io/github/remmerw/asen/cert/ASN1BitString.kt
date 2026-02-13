@@ -16,7 +16,7 @@ abstract class ASN1BitString : ASN1Primitive, ASN1String, ASN1Encodable {
      */
     internal constructor(data: ByteArray, padBits: Int) {
         require(!(data.isEmpty() && padBits != 0)) { "zero length data with non-zero pad bits" }
-        require(!(padBits > 7 || padBits < 0)) { "pad bits cannot be greater than 7 or less than 0" }
+        require(!(padBits !in 0..7)) { "pad bits cannot be greater than 7 or less than 0" }
 
         this.contents = prepend(data, padBits.toByte())
     }

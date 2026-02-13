@@ -30,7 +30,7 @@ class Time : ASN1Object, ASN1Choice {
         val d = time.format(format) + "Z"
         val year = d.substring(0, 4).toInt()
 
-        if (year < 1950 || year > 2049) {
+        if (year !in 1950..2049) {
             this.time = DERGeneralizedTime(d)
         } else {
             this.time = DERUTCTime(d.substring(2))

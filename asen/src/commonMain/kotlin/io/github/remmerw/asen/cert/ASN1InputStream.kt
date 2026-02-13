@@ -290,7 +290,7 @@ internal class ASN1InputStream(
             BERTags.INTEGER -> ASN1Integer(defIn.toByteArray())
             BERTags.NULL -> {
                 check(defIn.toByteArray().isEmpty()) { "malformed NULL encoding encountered" }
-                return DERNull.INSTANCE
+                DERNull.INSTANCE
             }
 
             BERTags.NUMERIC_STRING -> DERNumericString(defIn.toByteArray())

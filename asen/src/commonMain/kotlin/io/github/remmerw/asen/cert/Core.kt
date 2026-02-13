@@ -226,13 +226,13 @@ fun getTimeInstance(obj: Any): Time {
 fun getSequenceInstance(obj: Any): ASN1Sequence {
     return when (obj) {
         is ASN1Sequence -> {
-            return obj
+            obj
         }
 
         is ASN1Encodable -> {
             val primitive = obj.toASN1Primitive()
             if (primitive is ASN1Sequence) {
-                return primitive
+                primitive
             } else {
                 throw IllegalArgumentException("unknown object in getInstance ")
             }
@@ -280,7 +280,7 @@ fun getASN1ObjectIdentifierInstance(obj: Any): ASN1ObjectIdentifier {
 fun getASN1BitStringInstance(obj: Any): ASN1BitString {
     return when (obj) {
         is ASN1BitString -> {
-            return obj
+            obj
         }
 
         is ASN1Encodable -> {
@@ -305,7 +305,7 @@ fun getASN1BitStringInstance(obj: Any): ASN1BitString {
 fun getASN1OctetStringInstance(obj: Any): ASN1OctetString {
     return when (obj) {
         is ASN1OctetString -> {
-            return obj
+            obj
         }
 
         is ASN1Encodable -> {

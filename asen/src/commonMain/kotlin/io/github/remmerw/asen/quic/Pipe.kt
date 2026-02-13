@@ -10,7 +10,8 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.min
 
-internal class Pipe() {
+@Suppress("unused")
+internal class Pipe {
     private val buffer = Buffer()
     private var canceled = false
 
@@ -148,6 +149,7 @@ open class Timeout {
     }
 
     /** Set a deadline of now plus `duration` time.  */
+    @Suppress("unused")
     fun deadline(duration: Long, unit: TimeUnit): Timeout {
         require(duration > 0) { "duration <= 0: $duration" }
         return deadlineNanoTime(System.nanoTime() + unit.toNanos(duration))
@@ -160,6 +162,8 @@ open class Timeout {
     }
 
     /** Clears the deadline. */
+
+    @Suppress("unused")
     open fun clearDeadline(): Timeout {
         hasDeadline = false
         return this

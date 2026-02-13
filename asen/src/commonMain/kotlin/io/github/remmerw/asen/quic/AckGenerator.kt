@@ -38,8 +38,8 @@ internal class AckGenerator {
                     true
                 } else {
                     // NOTE: here is the case for 1 acknowledged packet
-                    // check when the current time is greater then the first arrived package
-                    // plus max ack delay, then a ack must send (returns true)
+                    // check when the current time is greater than the first arrived package
+                    // plus max ack delay, then an ack must send (returns true)
                     acknowlegdeSince.elapsedNow().inWholeMilliseconds > Settings.MAX_ACK_DELAY
                 }
             }
@@ -86,7 +86,7 @@ internal class AckGenerator {
 
         var largestWithAck: Long = -1
 
-        // it is ordered, packet status with highest packet number is at the top
+        // it is ordered, packet status with the highest packet number is at the top
         val acknowledgedRanges = receivedAck.acknowledgedRanges
         var i = 0
         while (i < acknowledgedRanges.size) {
@@ -111,7 +111,7 @@ internal class AckGenerator {
             // All earlier and equal sent packets (smaller-equal packet numbers), the sent ack's
             // can be discarded because their ranges are a subset of the ones from the
             // latestAcknowledgedAck and thus are now implicitly acked.
-            val oldEntries: List<Long> = ackSentWithPacket.keys.filter { it ->
+            val oldEntries: List<Long> = ackSentWithPacket.keys.filter {
                 it <= largestWithAck
             }.toList()
 

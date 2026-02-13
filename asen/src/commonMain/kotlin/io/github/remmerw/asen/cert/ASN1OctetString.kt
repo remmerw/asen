@@ -57,7 +57,7 @@ package io.github.remmerw.asen.cert
  * a segment of the overall octet string, the encoding arising from
  * a recursive application of this subclause.
  * In this recursive application, each segment is treated as if it were
- * a octet string value. The encodings of the segments shall appear in the contents
+ * an octet string value. The encodings of the segments shall appear in the contents
  * octets in the order in which their octets appear in the overall value.
  *
  * <blockquote>

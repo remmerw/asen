@@ -7,7 +7,7 @@ class Protocols {
     }
 
     fun put(key: String, handler: Handler) {
-        protocols.put(key, handler)
+        protocols[key] = handler
     }
 
     fun get(key: String): Handler? {

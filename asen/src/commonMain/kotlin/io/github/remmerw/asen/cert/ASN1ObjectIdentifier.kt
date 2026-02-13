@@ -186,7 +186,7 @@ class ASN1ObjectIdentifier : ASN1Primitive {
             }
 
             val first = identifier[0]
-            if (first < '0' || first > '2') {
+            if (first !in '0'..'2') {
                 return false
             }
 

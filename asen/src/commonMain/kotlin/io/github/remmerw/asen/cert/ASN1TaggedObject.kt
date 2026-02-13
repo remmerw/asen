@@ -96,7 +96,7 @@ abstract class ASN1TaggedObject internal constructor(
 
     val isExplicit: Boolean
         /**
-         * return whether or not the object may be explicitly tagged.
+         * return whether the object may be explicitly tagged.
          *
          *
          * Note: if the object has been read from an input stream, the only

@@ -173,10 +173,7 @@ object AddressUtil {
                 if (dotCount != 3) {
                     return null
                 }
-                val v4addr = textToNumericFormatV4(ia4)
-                if (v4addr == null) {
-                    return null
-                }
+                val v4addr = textToNumericFormatV4(ia4) ?: return null
                 for (k in 0..<INADDR4SZ) {
                     dst[j++] = v4addr[k]
                 }
@@ -286,14 +283,14 @@ object AddressUtil {
         if (radix == HEXADECIMAL) {
             return parseAsciiHexDigit(c)
         }
-        val `val` = c.code - '0'.code
-        return if (`val` < 0 || `val` >= radix) -1 else `val`
+        val diff = c.code - '0'.code
+        return if (diff !in 0..<radix) -1 else diff
     }
 
     // Parse ASCII digit in hexadecimal radix
     private fun parseAsciiHexDigit(digit: Char): Int {
         val c = digit.lowercaseChar()
-        if (c >= 'a' && c <= 'f') {
+        if (c in 'a'..'f') {
             return c.code - 'a'.code + 10
         }
         return parseAsciiDigit(c, DECIMAL)

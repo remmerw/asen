@@ -7,9 +7,9 @@ package io.github.remmerw.asen.cert
  * X.680 section 37.4 defines PrintableString character codes as ASCII subset of following characters:
  *
  *
- *  * Latin capital letters: 'A' .. 'Z'
- *  * Latin small letters: 'a' .. 'z'
- *  * Digits: '0'..'9'
+ *  * Latin capital letters: 'A' ... 'Z'
+ *  * Latin small letters: 'a' ... 'z'
+ *  * Digits: '0'...'9'
  *  * Space
  *  * Apostrophe: '\''
  *  * Left parenthesis: '('

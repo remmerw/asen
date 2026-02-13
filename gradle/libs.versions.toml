@@ -1,21 +1,21 @@
 [versions]
-agp = "8.13.2"
-kotlin = "2.3.0"
+agp = "9.0.0"
+kotlin = "2.3.10"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
-kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version = "1.9.0" }
+kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version = "1.10.0" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
 cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version = "0.5.0" }
 cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version = "0.5.0" }
 hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version = "0.8.0" }
-borr = { module = "io.github.remmerw:borr", version = "0.0.6" }
-frey = { module = "io.github.remmerw:frey", version = "0.2.1" }
+borr = { module = "io.github.remmerw:borr", version = "0.0.7" }
+frey = { module = "io.github.remmerw:frey", version = "0.2.2" }
 
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 androidLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.35.0" }
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }

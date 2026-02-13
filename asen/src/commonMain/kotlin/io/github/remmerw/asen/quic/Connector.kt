@@ -14,7 +14,7 @@ interface Listener {
     fun removeConnection(connection: Connection)
 }
 
-class Connector() : Listener {
+class Connector : Listener {
     private val connections: MutableMap<InetSocketAddress, Connection> = ConcurrentHashMap()
     private val socket = DatagramSocket()
 
@@ -149,7 +149,7 @@ class Connector() : Listener {
             responder = responder,
             listener = this
         )
-        connections.put(remoteAddress, clientConnection)
+        connections[remoteAddress] = clientConnection
         clientConnection.connect(timeout)
 
         return clientConnection
