@@ -45,7 +45,7 @@ internal data class RelayStopHandler(
         } else {
             try {
                 val msg = ProtoBuf.decodeFromByteArray<StopMessage>(data)
-                checkNotNull(msg)
+                checkNotNull(msg.toString())
 
 
                 if (msg.type != StopMessage.Type.CONNECT) {
