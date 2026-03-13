@@ -93,7 +93,7 @@ class Asen internal constructor(
 
     /**
      * Makes a reservation to relay nodes with the purpose that other peers can find you via
-     * the its peerId
+     * the peerId
      *
      * Note: when a reservation is just happening no further reservation is possible (mutex - protection)
      *
