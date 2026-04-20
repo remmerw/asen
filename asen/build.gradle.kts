@@ -15,7 +15,7 @@ kotlin {
 
     android {
         namespace = "io.github.remmerw.asen"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 27
 
 
