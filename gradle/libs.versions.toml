@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.1"
+agp = "9.2.0"
 kotlin = "2.3.20"
 
 [libraries]
@@ -10,8 +10,8 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version = "0.6.0" }
 cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version = "0.6.0" }
 hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version = "0.8.0" }
-borr = { module = "io.github.remmerw:borr", version = "0.0.7" }
-frey = { module = "io.github.remmerw:frey", version = "0.2.2" }
+borr = { module = "io.github.remmerw:borr", version = "0.0.8" }
+frey = { module = "io.github.remmerw:frey", version = "0.2.3" }
 
 
 [plugins]
