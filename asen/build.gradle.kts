@@ -19,6 +19,7 @@ kotlin {
         minSdk = 27
 
 
+        withHostTest {  }
 
         // Opt-in to enable and configure device-side (instrumented) tests
         withDeviceTest {
