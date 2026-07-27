@@ -11,7 +11,7 @@ cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", ver
 cryptography-provider-jdk = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk", version = "0.6.0" }
 hmac-sha2 = { module = "org.kotlincrypto.macs:hmac-sha2", version = "0.8.0" }
 borr = { module = "io.github.remmerw:borr", version = "0.0.8" }
-frey = { module = "io.github.remmerw:frey", version = "0.2.3" }
+frey = { module = "io.github.remmerw:frey", version = "0.2.5" }
 
 
 [plugins]
