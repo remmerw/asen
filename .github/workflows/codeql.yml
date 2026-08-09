@@ -1,0 +1,57 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '30 18 * * 1' # Läuft jeden Montag um 18:30 UTC
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java-kotlin' ] # Nutzt das aktuelle Java/Kotlin-Modell für CodeQL
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 1. Java 21 Umgebung explizit vor CodeQL bereitstellen
+    - name: Set up JDK 
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'zulu'
+        cache: 'gradle' # Nutzt 'gradle', falls Ihr Projekt Gradle verwendet
+
+    # 2. CodeQL Werkzeuge initialisieren
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        # Falls Sie Lombok nutzen, aktivieren Sie den erweiterten Build-Modus:
+        # build-mode: manual 
+
+    # 3. Manueller Build (Ersetzt das fehlerhafte Autobuild)
+    # WÄHLEN SIE HIER IHR PASSENDES SYSTEM:
+    
+    
+    # Option B: Wenn Ihr Projekt GRADLE nutzt (Auskomment
+    - name: Build with Gradle
+      run: ./gradlew compileJvmMainJava
+
+    # 4. Analyse ausführen und Ergebnisse an GitHub übermitteln
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
