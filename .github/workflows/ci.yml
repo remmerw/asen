@@ -1,0 +1,46 @@
+name: Kotlin Multiplatform CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Linux runs Android/JVM tests
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: 'zulu'
+          java-version: '21' # Match your project's Java version
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # Optional: Prevent Android SDK location errors on Ubuntu runners
+      - name: Write local.properties (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      # Execute platform-specific tests to optimize billing minutes
+      - name: Run Android & JVM Tests
+        if: matrix.os == 'ubuntu-latest'
+        run: ./gradlew jvmTest
+
+      - name: Run iOS Tests
+        if: matrix.os == 'macos-latest'
+        run: ./gradlew iosSimulatorArm64Test
