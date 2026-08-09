@@ -1,0 +1,50 @@
+name: Ktlint Auto Format
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch, der formatiert werden soll'
+        required: true
+        default: 'main'
+
+jobs:
+  ktlint-format:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Run Ktlint Format
+        run: ./gradlew ktlintFormat
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: auto format Kotlin code with ktlint"
+          committer: "GitHub Action <action@github.com>"
+          author: "GitHub Action <action@github.com>"
+          branch: "ktlint-format-${{ github.event.inputs.branch }}"
+          title: "Ktlint Formatierung für Branch `${{ github.event.inputs.branch }}`"
+          body: |
+            Dieser PR wurde automatisch erstellt, um den Kotlin-Code auf dem Branch `${{ github.event.inputs.branch }}` zu formatieren.
+            Bitte überprüfe die Änderungen und merge den PR manuell.
+          base: ${{ github.event.inputs.branch }}
+          delete-branch: true
+          add-paths: |
+            *.kt
+            *.kts
