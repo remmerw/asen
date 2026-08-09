@@ -24,7 +24,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     # 1. Java 21 Umgebung explizit vor CodeQL bereitstellen
     - name: Set up JDK 
