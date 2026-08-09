@@ -3,10 +3,10 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "weekly" # Options: daily, weekly, monthly
+      interval: "daily" # Options: daily, weekly, monthly
 
   # Example for GitHub Actions updates
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
