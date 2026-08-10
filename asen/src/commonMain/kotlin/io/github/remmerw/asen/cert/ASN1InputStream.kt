@@ -192,8 +192,7 @@ internal class ASN1InputStream(
             length = (length shl 8) + octet
         } while (++octetsPos < octetsCount)
 
-        if (length >= limit)  // after all we must have read at least 1 byte
-        {
+        if (length >= limit) {
             throw Exception("corrupted stream - out of bounds length found: $length >= $limit")
         }
 
