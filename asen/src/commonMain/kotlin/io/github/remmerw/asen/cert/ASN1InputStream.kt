@@ -1,12 +1,5 @@
 package io.github.remmerw.asen.cert
 
-/**
- * A general purpose ASN.1 decoder - note: this class differs from the
- * others in that it returns null after it has read the last object in
- * the stream. If an ASN.1 NULL is encountered a DER/BER Null object is
- * returned.
- */
-
 
 /**
  * Create an ASN1InputStream where no DER object will be longer than limit, and constructed
