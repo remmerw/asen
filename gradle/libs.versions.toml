@@ -1,6 +1,6 @@
 [versions]
 agp = "9.3.1"
-kotlin = "2.4.10"
+kotlin = "2.4.21"
 ktlint = "14.2.0"
 
 [libraries]
